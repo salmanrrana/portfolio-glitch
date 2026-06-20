@@ -5,6 +5,7 @@
 //
 //   glitchInOut  → video plays, sky glitch flickers in/out, title hidden
 //   titleReveal  → "Salman R Rana || Software Engineer" emerges from the sky
+//   titleHold    → title stays resolved long enough to breathe
 //   titleFade    → the title drifts away on continued scroll
 //   glitchWave2  → a second sky-glitch wave (driven by glitch.js; title gone)
 //   outro        → sky settles clean; Contact + Projects links reveal
@@ -85,6 +86,8 @@ export function titleFrame(scene, sp) {
         glitch: e * 0.4,
       };
     }
+    case "titleHold":
+      return { opacity: 1, shift: 0, blur: 0, glitch: 0 };
     default:
       // glitchInOut (before reveal), glitchWave2 and outro (after fade): hidden.
       return { opacity: 0, shift: 0, blur: 0, glitch: 0 };

@@ -13,9 +13,12 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 > and out with scroll while the field/hills/horses stay clean. The scroll
 > narrative (`src/scenes.js`) is live too: the title reveals out of the glitch,
 > fades, and the experience ends on a clean outro with Contact/Projects links.
-> The final cross-device hardening pass is in — adaptive/connection-aware media
-> loading, battery-saving pause when hidden/offscreen, weak-GPU degradation, and
-> a keyboard/reduced-motion path to the links (see **Performance & accessibility**
+> Projects now open as a fixed overlay from the video via a slow white fade,
+> with six temporary project rows, iframe previews, and a lightweight
+> pointer-reactive glitch net that stays behind the project information. The final
+> cross-device hardening pass is in — adaptive/connection-aware media loading,
+> battery-saving pause when hidden/offscreen, weak-GPU degradation, and a
+> keyboard/reduced-motion path to the links (see **Performance & accessibility**
 > below).
 
 ## Project layout
@@ -24,10 +27,11 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 index.html              # single page; pinned full-bleed video stage + tall scroll container
 src/
   styles.css            # base styles + sticky-pinned full-viewport video stage
-  main.js               # ES-module entry: hero video bootstrap + timeline + glitch + ?debug overlay
+  main.js               # ES-module entry: hero video bootstrap + timeline + glitch + projects + ?debug overlay
   timeline.js           # scroll-progress engine (rAF, 0..1, named scenes); subscribe(fn)
   glitch.js             # WebGL masked sky-glitch shader; renders video→canvas, gated by sky-mask
   scenes.js             # scroll narrative: title reveal/fade + outro links, timed off the timeline
+  projects.js           # fixed Projects overlay, white fade entry, iframe previews, glitch-net background
 public/assets/          # encoded video, poster, sky-mask (committed); raw .MOV is NOT
 scripts/
   encode-video.sh       # transcode the raw hero .MOV → web-optimized assets
@@ -147,6 +151,7 @@ the glitch shader and drives the title and outro links per scene:
 | ------------- | ----------------------------------------------------------------- |
 | `glitchInOut` | Video plays; sky glitch flickers in/out; title + links hidden.    |
 | `titleReveal` | **Salman R Rana \|\| Software Engineer** resolves out of the glitch (chromatic split settling to clean), rises into place, and holds. |
+| `titleHold`   | The title stays resolved so the name has time to land.            |
 | `titleFade`   | The title drifts up and fades on continued scroll.                |
 | `glitchWave2` | A second sky-glitch wave (intensity from `glitch.js`); title gone. |
 | `outro`       | Sky settles clean; **Contact** and **Projects** links reveal.     |
@@ -159,12 +164,28 @@ the glitch shader and drives the title and outro links per scene:
 - **Tuning:** reveal/fade curves live in `src/scenes.js` (`titleFrame` / `outroFrame`);
   scene boundaries live in `SCENES` in `src/timeline.js`. Calibrate with `?debug`.
 
+### Projects overlay
+
+`src/projects.js` owns the project area. The page does **not** scroll down into a
+separate projects section when JS is active; clicking Projects keeps the visitor
+on the video scroll position, flashes the screen white, then fades in a fixed
+overlay. Six temporary project bays are rendered from the `PROJECTS` array.
+
+- Replace each `Project Bay` object with the real title, description, tags,
+  preview URL/source URL, and accent color.
+- The background glitch net is a capped-DPR canvas that only runs while the
+  overlay is open. Pointer movement creates short decaying glitch trails behind
+  the project index, so the projects themselves stay readable.
+- Each row opens the iframe viewer. `Open GitHub` currently points to
+  `https://github.com/salmanrrana` until real project URLs are added.
+
 #### Editing the outro links
 
 The two calls-to-action are plain anchors in `index.html` (look for `<nav class="outro">`):
 
 - **Contact** — change the `mailto:` address.
-- **Projects** — replace the `#projects` placeholder with the real projects URL.
+- **Projects** — keep `#projects` for the in-page overlay; edit real project data in
+  `src/projects.js`.
 
 ## Performance & accessibility (hardening)
 
@@ -202,7 +223,7 @@ managing the video either way.
 
 - A **skip link** (first focusable element) and a minimal **quick-links nav**
   (`<nav id="site-nav">`) give keyboard and `prefers-reduced-motion` users
-  Contact/Projects **without** scrolling the full 400vh — the nav reveals on
+  Contact/Projects **without** scrolling the full long-form hero — the nav reveals on
   keyboard focus and is shown persistently under reduced motion. Keep its hrefs
   in sync with the outro `<nav class="outro">` (both are documented inline).
 - `prefers-reduced-motion: reduce` drops the WebGL glitch (plain video hero) and

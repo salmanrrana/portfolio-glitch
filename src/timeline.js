@@ -34,14 +34,16 @@
 
 // Named scene ranges as [start, end] fractions of total scroll progress.
 // Ordered and contiguous across the full 0..1 span. Downstream tickets read
-// these to time the glitch surges (glitchInOut / glitchWave2), the name reveal
-// and fade (titleReveal / titleFade), and the closing links (outro).
+// these to time the glitch surges (glitchInOut / glitchWave2), the name reveal,
+// hold and fade (titleReveal / titleHold / titleFade), and the closing links
+// (outro).
 export const SCENES = Object.freeze({
-  glitchInOut: [0.0, 0.28],
-  titleReveal: [0.28, 0.5],
-  titleFade: [0.5, 0.64],
-  glitchWave2: [0.64, 0.86],
-  outro: [0.86, 1.0],
+  glitchInOut: [0.0, 0.32],
+  titleReveal: [0.32, 0.5],
+  titleHold: [0.5, 0.68],
+  titleFade: [0.68, 0.78],
+  glitchWave2: [0.78, 0.93],
+  outro: [0.93, 1.0],
 });
 
 const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);

@@ -98,8 +98,8 @@ FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 SAMPLE_TIMES = [float(t) for t in os.environ.get("SAMPLE_TIMES", "0,3,6,9,12,14.5").split(",")]
 
 CONFIRM_RUN = 3      # consecutive foreground rows needed to confirm the canopy
-SAFETY_MARGIN = 14   # px to lift the opaque sky region above the canopy
-FEATHER_RADIUS = 5   # px Gaussian blur for a soft, seamless edge
+SAFETY_MARGIN = 5    # px to lift the opaque sky region above the canopy
+FEATHER_RADIUS = 4   # px Gaussian blur for a soft, seamless edge
 COL_MIN_WINDOW = 9   # horizontal min-filter window (protect between-col branches)
 
 

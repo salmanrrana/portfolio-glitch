@@ -18,6 +18,7 @@ Thumbs.db
 .vscode/
 
 # Brain Dump Ralph artifacts
+.tmp-qa/
 plans/prd.json
 plans/progress.txt
 plans/archives/

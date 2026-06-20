@@ -13,16 +13,16 @@
     <!--
       Social / Open Graph + Twitter cards. The poster doubles as the share image.
       ┌─ EDIT ON DEPLOY ───────────────────────────────────────────────────────┐
-      │ og:url and og:image should be ABSOLUTE URLs once the Netlify domain is   │
+      │ og:url and og:image should be ABSOLUTE URLs once the final domain is     │
       │ known (most scrapers resolve relative og:image, but absolute is safest). │
-      │ Replace https://example.netlify.app with the real site URL.             │
+      │ Replace this salmanrrana GitHub Pages placeholder with the real URL.     │
       └──────────────────────────────────────────────────────────────────────────┘
     -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Salman R Rana — Software Engineer" />
     <meta property="og:description" content="A scroll-driven sky-glitch splash portfolio." />
     <meta property="og:image" content="public/assets/hero-poster.jpg" />
-    <meta property="og:url" content="https://example.netlify.app/" />
+    <meta property="og:url" content="https://salmanrrana.github.io/glitch_portfolio/" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Salman R Rana — Software Engineer" />
     <meta name="twitter:description" content="A scroll-driven sky-glitch splash portfolio." />
@@ -51,7 +51,7 @@
     <!--
       Non-scroll access to the calls-to-action (hardening / a11y).
 
-      The narrative reveals Contact/Projects only at the end of a 400vh scroll, so
+      The narrative reveals Contact/Projects only at the end of a long scroll, so
       keyboard and prefers-reduced-motion users need a path that doesn't require
       the full journey. This skip link + minimal nav provides it:
         • The skip link is the first focusable element — Tab once, Enter, and the
@@ -75,7 +75,7 @@
     </noscript>
 
     <!--
-      Tall scroll container (400vh) drives the timeline. The visual stage inside
+      Tall scroll container drives the timeline. The visual stage inside
       it is sticky-pinned to the viewport, so scrolling advances the experience
       (progress 0..1) while the hero stays full-bleed. Later tickets layer the
       WebGL sky-glitch canvas over this same stage and the title reveal/outro
@@ -142,6 +142,46 @@
         </div>
       </section>
     </main>
+
+    <div class="project-flash" data-project-flash aria-hidden="true"></div>
+
+    <section class="project-space" id="projects" data-project-space aria-labelledby="projects-title">
+      <canvas class="project-glitch-net" data-project-glitch-net aria-hidden="true"></canvas>
+      <button class="project-space__close" type="button" data-project-space-close aria-label="Close projects">
+        <span aria-hidden="true">&times;</span>
+      </button>
+
+      <div class="project-space__inner">
+        <header class="project-space__header">
+          <p class="project-space__kicker">Projects</p>
+          <h2 class="project-space__title" id="projects-title">Selected work index.</h2>
+        </header>
+
+        <div class="project-index" data-project-grid aria-live="polite"></div>
+      </div>
+    </section>
+
+    <dialog class="project-viewer" data-project-viewer aria-labelledby="project-viewer-title">
+      <div class="project-viewer__chrome">
+        <div>
+          <p class="project-viewer__kicker" data-project-viewer-kind>Preview</p>
+          <h3 class="project-viewer__title" id="project-viewer-title" data-project-viewer-title>Project</h3>
+        </div>
+        <div class="project-viewer__actions">
+          <a class="project-viewer__open" data-project-viewer-open href="https://github.com/salmanrrana" target="_blank" rel="noreferrer">Open GitHub</a>
+          <button class="project-viewer__close" type="button" data-project-viewer-close aria-label="Close project preview">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      </div>
+      <iframe
+        class="project-viewer__frame"
+        data-project-viewer-frame
+        title="Project preview"
+        loading="lazy"
+        sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-scripts"
+      ></iframe>
+    </dialog>
 
     <script type="module" src="src/main.js"></script>
   </body>

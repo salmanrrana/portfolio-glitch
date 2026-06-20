@@ -116,14 +116,14 @@ float hash21(vec2 p) {
 void main() {
   vec2 screenUv = v_uv;
 
-  // Cover-fit: map screen UVs into video UVs so the 16:9 video fills the canvas
-  // with center-crop (identical math to CSS object-fit: cover). The SAME uv
-  // samples both the video and the mask, so the mask tracks the video exactly.
+  // Cover-fit: map screen UVs into the visible center-crop of the 16:9 video
+  // (identical to CSS object-fit: cover). The SAME uv samples both the video
+  // and the mask, so the mask tracks the video exactly.
   float viewAspect = u_resolution.x / u_resolution.y;
   vec2 scale = (viewAspect > u_videoAspect)
       ? vec2(1.0, u_videoAspect / viewAspect)  // viewport wider  -> crop top/bottom
       : vec2(viewAspect / u_videoAspect, 1.0); // viewport taller -> crop left/right
-  vec2 uv = (screenUv - 0.5) / scale + 0.5;
+  vec2 uv = (screenUv - 0.5) * scale + 0.5;
 
   // Clean, untouched video at the true UV — this is what the foreground keeps.
   vec3 clean = texture2D(u_video, uv).rgb;
@@ -294,6 +294,9 @@ function sceneBaseIntensity(scene, sp) {
     case "titleReveal":
       // Calm sky behind the emerging title; gentle rise.
       return 0.1 + 0.18 * sp;
+    case "titleHold":
+      // Let the resolved title breathe against a mostly calm sky.
+      return 0.14 + 0.06 * Math.sin(Math.PI * sp);
     case "titleFade":
       // Build toward the second wave.
       return 0.18 + 0.22 * sp;

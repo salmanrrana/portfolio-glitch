@@ -48,7 +48,7 @@ footage by `assets-src/make-sky-mask.py` so it is repeatable after any re-encode
 4. Lifts the fully-opaque sky region **`SAFETY_MARGIN` px above** the canopy and
    Gaussian-feathers, so the entire soft edge finishes (reaches black) at/above
    the real canopy. Trees therefore receive mask = 0. We deliberately
-   **under-glitch a sliver of true sky rather than ever bleed onto foreground.**
+   **under-glitch only a narrow sliver of true sky rather than ever bleed onto foreground.**
 
 ## 3. UV mapping for the WebGL shader (Step 2 — `object-fit: cover`)
 
@@ -66,7 +66,7 @@ vec2 scale = (viewAspect > videoAspect)
     ? vec2(1.0, videoAspect / viewAspect)   // viewport wider  -> crop top/bottom
     : vec2(viewAspect / videoAspect, 1.0);  // viewport taller -> crop left/right
 
-vec2 uv = (screenUv - 0.5) / scale + 0.5;   // SAME uv for u_video and u_mask
+vec2 uv = (screenUv - 0.5) * scale + 0.5;   // SAME uv for u_video and u_mask
 vec4 clean = texture2D(u_video, uv);
 float m    = texture2D(u_mask,  uv).r;       // 1 = sky, 0 = protected
 gl_FragColor = mix(clean, glitch, m * u_intensity);
@@ -89,7 +89,7 @@ gl_FragColor = mix(clean, glitch, m * u_intensity);
 python3 assets-src/make-sky-mask.py
 
 # tune if the footage/encode changes (all overridable via env):
-SAFETY_MARGIN=18 FEATHER_RADIUS=6 SAMPLE_TIMES=0,2,4,6,8,10,12,14 \
+SAFETY_MARGIN=5 FEATHER_RADIUS=4 SAMPLE_TIMES=0,2,4,6,8,10,12,14 \
   python3 assets-src/make-sky-mask.py
 ```
 
@@ -100,8 +100,8 @@ loop window or resolution in `scripts/encode-video.sh` so the mask stays aligned
 
 - **Static evidence:** `assets-src/sky-mask-overlay.jpg` — the mask's glitchable
   region tinted red over a real frame with the boundary drawn green. The red
-  covers the sky/clouds and stops at the canopy with a safety gap; it touches **no**
-  tree, hill, or horse.
+  covers the sky/clouds and stops tightly at the canopy; it touches **no** tree,
+  hill, or horse.
 - **Live, in-browser:** serve the repo root and open
   `http://localhost:8000/assets-src/verify-sky-mask.html`. Overlays the mask on
   the playing video using the cover-fit mapping above; switch aspect ratios to

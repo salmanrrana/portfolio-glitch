@@ -10,6 +10,7 @@
 import { createTimeline } from "./timeline.js";
 import { initGlitch } from "./glitch.js";
 import { initScenes } from "./scenes.js";
+import { initProjects } from "./projects.js";
 
 // This module executing at all means the ES-module graph loaded successfully, so
 // cancel the inline self-heal fallback (index.html) that would otherwise reveal
@@ -272,6 +273,7 @@ function init() {
   let timeline = null;
   let glitch = null;
   let scenes = null;
+  let projects = null;
   let power = null;
 
   // Error boundary: this is the seam where later tickets wire glitch.js and
@@ -301,6 +303,7 @@ function init() {
     // in sync with the shader's glitch surges. Returns null (leaving the static
     // title/links visible) if the markup hooks are absent.
     scenes = initScenes({ timeline, debug: DEBUG });
+    projects = initProjects({ debug: DEBUG });
 
     // Single battery/CPU authority: pauses the rAF loops + video when the hero
     // is offscreen or the tab is hidden, and resumes them together. timeline.js
@@ -317,7 +320,7 @@ function init() {
     // Expose the single timeline + controllers so downstream modules (the
     // hardening pass) subscribe to the same clock and can dial things instead of
     // making their own.
-    window.glitchPortfolio = { timeline, glitch, scenes, power, tier };
+    window.glitchPortfolio = { timeline, glitch, scenes, projects, power, tier };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";
@@ -333,7 +336,7 @@ function init() {
     document.documentElement.classList.remove("js");
     // Tear down whatever started before the throw so we don't leak a running rAF
     // loop (each guarded — a destroy must not mask the original bootstrap error).
-    for (const controller of [power, glitch, scenes, timeline]) {
+    for (const controller of [power, projects, glitch, scenes, timeline]) {
       try {
         controller?.destroy?.();
       } catch (_) {
