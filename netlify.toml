@@ -1,0 +1,19 @@
+# Netlify configuration — no build step for the static site itself.
+# The only build step the project tolerates is the ffmpeg video transcode
+# (scripts/encode-video.sh, a separate ticket), run locally before deploy.
+
+[build]
+  publish = "."
+  # no build command needed for the static site itself
+
+# Default: never cache HTML/JS/CSS so "git push -> live" updates show instantly.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Fingerprinted, immutable media assets — cache hard for a year.
+[[headers]]
+  for = "/public/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

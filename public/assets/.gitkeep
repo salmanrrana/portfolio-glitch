@@ -1,0 +1,2 @@
+# Keeps public/assets/ in git. Encoded video, poster, and sky-mask land here
+# (the raw *.MOV source is gitignored and never committed).

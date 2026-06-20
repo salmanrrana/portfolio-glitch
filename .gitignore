@@ -1,3 +1,22 @@
+# Dependencies
+node_modules/
+
+# Netlify
+.netlify/
+
+# Raw video source — never commit the heavy ~60 MB original.
+# Web-optimized outputs live in public/assets/ and ARE committed.
+*.MOV
+*.mov
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
 # Brain Dump Ralph artifacts
 plans/prd.json
 plans/progress.txt
@@ -5,6 +24,8 @@ plans/archives/
 plans/review-runs/
 plans/ralph*.sh
 .claude/ralph-context.md
+.claude/ralph-state.json
+.claude/capture-token-usage.log
 .claude/review-runs/
 .ralph-prompt.md
 .ralph-services.json
