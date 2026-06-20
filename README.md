@@ -11,8 +11,9 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 > `0..1` progress with named scene ranges. The baked sky mask and the WebGL
 > sky-glitch shader (`src/glitch.js`) are live — the masked sky now corrupts in
 > and out with scroll while the field/hills/horses stay clean. The scroll
-> narrative (title reveal/outro) arrives in a later ticket and subscribes to this
-> same timeline.
+> narrative (`src/scenes.js`) is live too: the title reveals out of the glitch,
+> fades, and the experience ends on a clean outro with Contact/Projects links.
+> Cross-device performance/accessibility hardening is the final ticket.
 
 ## Project layout
 
@@ -23,6 +24,7 @@ src/
   main.js               # ES-module entry: hero video bootstrap + timeline + glitch + ?debug overlay
   timeline.js           # scroll-progress engine (rAF, 0..1, named scenes); subscribe(fn)
   glitch.js             # WebGL masked sky-glitch shader; renders video→canvas, gated by sky-mask
+  scenes.js             # scroll narrative: title reveal/fade + outro links, timed off the timeline
 public/assets/          # encoded video, poster, sky-mask (committed); raw .MOV is NOT
 scripts/
   encode-video.sh       # transcode the raw hero .MOV → web-optimized assets
@@ -132,6 +134,34 @@ overlay is only mounted when the flag is present; it is absent from normal outpu
   (`glitchInOut`, `titleReveal`, `titleFade`, `glitchWave2`, `outro`) plus `sceneAt()`
   and `sceneProgress()` helpers. Downstream tickets subscribe here rather than reading
   scroll themselves. Editing scene boundaries: change the ranges in `SCENES`.
+
+### Scroll narrative (title reveal → fade → outro)
+
+`src/scenes.js` is the content + timing layer. It subscribes to the same timeline as
+the glitch shader and drives the title and outro links per scene:
+
+| Scene         | What happens                                                       |
+| ------------- | ----------------------------------------------------------------- |
+| `glitchInOut` | Video plays; sky glitch flickers in/out; title + links hidden.    |
+| `titleReveal` | **Salman R Rana \|\| Software Engineer** resolves out of the glitch (chromatic split settling to clean), rises into place, and holds. |
+| `titleFade`   | The title drifts up and fades on continued scroll.                |
+| `glitchWave2` | A second sky-glitch wave (intensity from `glitch.js`); title gone. |
+| `outro`       | Sky settles clean; **Contact** and **Projects** links reveal.     |
+
+- **Progressive enhancement:** `index.html` adds the `js` class to `<html>` before
+  paint. With JS off, the title and links stay fully visible and static; only with JS
+  do they start hidden and animate (no flash of the static page).
+- **Reduced motion:** `prefers-reduced-motion: reduce` keeps the same beats but drops
+  the blur / drift / chromatic split — the title and links simply cross-fade calmly.
+- **Tuning:** reveal/fade curves live in `src/scenes.js` (`titleFrame` / `outroFrame`);
+  scene boundaries live in `SCENES` in `src/timeline.js`. Calibrate with `?debug`.
+
+#### Editing the outro links
+
+The two calls-to-action are plain anchors in `index.html` (look for `<nav class="outro">`):
+
+- **Contact** — change the `mailto:` address.
+- **Projects** — replace the `#projects` placeholder with the real projects URL.
 
 ## Deploy to Netlify
 

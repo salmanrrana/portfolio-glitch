@@ -7,6 +7,15 @@
     <meta name="theme-color" content="#05060a" />
     <title>Salman R Rana — Software Engineer</title>
     <link rel="stylesheet" href="src/styles.css" />
+    <!--
+      Progressive enhancement flag, set synchronously before first paint so the
+      scroll-driven title/outro can start hidden WITHOUT a flash of the static
+      page. With JS disabled this class is never added, so styles.css leaves the
+      title and links fully visible and legible.
+    -->
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body>
     <noscript>
@@ -57,12 +66,30 @@
 
         <div class="stage__scrim" aria-hidden="true"></div>
 
+        <!--
+          Overlay layer: the title and the outro links are stacked in the same
+          centered cell (they never show at the same time). scenes.js subscribes
+          to the timeline and drives their reveal/fade/outro per scroll scene.
+        -->
         <div class="stage__content">
-          <h1 class="hero__title">
+          <h1 class="hero__title" data-title>
             <span class="hero__name">Salman R Rana</span>
             <span class="hero__sep" aria-hidden="true">||</span>
             <span class="hero__role">Software Engineer</span>
           </h1>
+
+          <!--
+            Outro links. These are the only two calls-to-action in the splash.
+            ┌─ EDIT HERE ────────────────────────────────────────────────────┐
+            │ Contact  → update the mailto: address below.                    │
+            │ Projects → replace the "#projects" placeholder with the real    │
+            │            projects URL (or keep it as an in-page anchor).      │
+            └────────────────────────────────────────────────────────────────┘
+          -->
+          <nav class="outro" data-outro aria-label="Get in touch">
+            <a class="outro__link" href="mailto:mrhuman515@gmail.com">Contact</a>
+            <a class="outro__link" href="#projects">Projects</a>
+          </nav>
         </div>
       </section>
     </main>

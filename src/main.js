@@ -9,6 +9,7 @@
 
 import { createTimeline } from "./timeline.js";
 import { initGlitch } from "./glitch.js";
+import { initScenes } from "./scenes.js";
 
 // Guard the location read so importing this module outside a browser
 // (test runner / SSR) doesn't blow up with an opaque module-load error.
@@ -166,10 +167,16 @@ function init() {
     const glitchCanvas = document.querySelector("[data-glitch-canvas]");
     const glitch = initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
 
-    // Expose the single timeline + glitch controller so downstream modules (the
-    // scene choreography, the hardening pass) subscribe to the same clock and can
-    // dial the glitch instead of making their own.
-    window.glitchPortfolio = { timeline, glitch };
+    // Scroll narrative: reveals the title, fades it, then reveals the outro
+    // Contact/Projects links — all timed off the same timeline so the text stays
+    // in sync with the shader's glitch surges. Returns null (leaving the static
+    // title/links visible) if the markup hooks are absent.
+    const scenes = initScenes({ timeline, debug: DEBUG });
+
+    // Expose the single timeline + controllers so downstream modules (the
+    // hardening pass) subscribe to the same clock and can dial things instead of
+    // making their own.
+    window.glitchPortfolio = { timeline, glitch, scenes };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";

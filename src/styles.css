@@ -124,11 +124,22 @@ body {
   );
 }
 
+/* Overlay layer covering the pinned stage. Title and outro are stacked in the
+   same centered grid cell (only one shows at a time per scene). pointer-events
+   are off so the layer never blocks the hero; the outro links re-enable them. */
 .stage__content {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  display: grid;
+  place-items: center;
   padding: clamp(1.5rem, 5vw, 4rem);
   text-align: center;
+  pointer-events: none;
+}
+
+.stage__content > * {
+  grid-area: 1 / 1; /* stack title + outro in one centered cell */
 }
 
 .noscript-note {
@@ -141,8 +152,14 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Title (placeholder positioning for now; the scroll-narrative ticket wires
-   its reveal/fade to the timeline). Type scale carries forward.
+   Title + outro narrative (driven by src/scenes.js off the scroll timeline).
+
+   Progressive enhancement: by default (no JS) the title and outro are fully
+   visible and static. Only when <html> carries the `js` class (set synchronously
+   in index.html before paint) do they start hidden and animate via the custom
+   properties scenes.js writes each frame:
+     --title-opacity / --title-shift / --title-blur / --title-glitch
+     --outro-opacity / --outro-shift
    -------------------------------------------------------------------------- */
 .hero__title {
   display: flex;
@@ -170,6 +187,90 @@ body {
 
 .hero__role {
   color: var(--accent-2);
+}
+
+/* When JS is active, scenes.js owns the title's reveal/fade. The chromatic
+   text-shadow scales with --title-glitch so the words resolve out of the glitch
+   on reveal, then settle clean (offset 0 → no fringing at rest). */
+.js .hero__title {
+  opacity: var(--title-opacity, 0);
+  transform: translateY(var(--title-shift, 0));
+  filter: blur(var(--title-blur, 0));
+  text-shadow:
+    calc(var(--title-glitch, 0) * 0.07em) 0 0 rgba(255, 0, 90, 0.7),
+    calc(var(--title-glitch, 0) * -0.07em) 0 0 rgba(0, 230, 255, 0.7),
+    0 2px 24px rgba(0, 0, 0, 0.55);
+  will-change: opacity, transform, filter;
+}
+
+/* --------------------------------------------------------------------------
+   Outro — Contact & Projects links
+   -------------------------------------------------------------------------- */
+.outro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 4vw, 2.5rem);
+  margin: 0;
+}
+
+.js .outro {
+  opacity: var(--outro-opacity, 0);
+  transform: translateY(var(--outro-shift, 18px));
+  /* Out of the tab order / a11y tree until scenes.js reveals it (.is-visible),
+     so keyboard users never focus an invisible link mid-scroll. */
+  visibility: hidden;
+  will-change: opacity, transform;
+}
+
+.js .outro.is-visible {
+  visibility: visible;
+}
+
+.outro__link {
+  pointer-events: auto; /* re-enable; .stage__content turns events off */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Comfortable tap target on touch (>= 44px tall). */
+  min-height: 44px;
+  padding: 0.75rem 1.75rem;
+  font-family: var(--font-mono);
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  text-decoration: none;
+  background: rgba(5, 6, 10, 0.4);
+  border: 1px solid rgba(244, 246, 251, 0.45);
+  border-radius: 999px;
+  transition: color 200ms ease, border-color 200ms ease, background 200ms ease, transform 200ms ease;
+}
+
+.outro__link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(5, 6, 10, 0.6);
+}
+
+.outro__link:active {
+  transform: translateY(1px);
+}
+
+/* Always-visible focus ring for keyboard users (fallback + focus-visible). */
+.outro__link:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.outro__link:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.outro__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 /* --------------------------------------------------------------------------
