@@ -396,6 +396,7 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
   let active = false; // true once mask + first video frame are up and we've revealed the canvas
   let destroyed = false;
   let disabled = false; // set when we fall back permanently (context lost / fatal upload)
+  let suspended = false; // set when an external authority (power saver) wants us paused
   let startTime = 0; // set on first frame (Date.now is fine; only used for shader time)
   let intensity = 0;
   let intensityScale = 1;
@@ -551,6 +552,20 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     }
   }
 
+  // External pause/resume (the power saver). `suspended` is separate from the
+  // internal `running` so a pause requested BEFORE the async mask load finishes
+  // is remembered: the mask-load `.then()` only auto-starts when not suspended,
+  // so we never spin the loop on a hidden/offscreen tab just because the mask
+  // happened to resolve late.
+  function suspend() {
+    suspended = true;
+    stop();
+  }
+  function resume() {
+    suspended = false;
+    start();
+  }
+
   // Tear down the GL path and hand the hero back to the plain <video>. This is a
   // one-way trip: `disabled` blocks any later resume() from reviving a dead path.
   function fallback() {
@@ -587,7 +602,9 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
         return;
       }
       maskTex = tex;
-      start();
+      // Honor a pause the power saver requested while the mask was loading
+      // (page opened on a hidden/offscreen tab) instead of starting regardless.
+      if (!suspended) start();
     })
     .catch((err) => {
       warn(err.message, "→ plain video hero");
@@ -598,8 +615,8 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     get isActive() {
       return active;
     },
-    pause: stop,
-    resume: start,
+    pause: suspend,
+    resume,
     /**
      * Scale the timeline-driven intensity (0 = clean, 1 = full). Hook for the
      * hardening ticket (reduced-motion shimmer, weak-GPU dial-down).

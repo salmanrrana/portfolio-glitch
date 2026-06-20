@@ -149,15 +149,18 @@ function initHeroVideo(video) {
     }
     return "poster";
   }
-  // Cross-fade from poster to live video once the first frame is decodable.
-  video.addEventListener(
-    "canplay",
-    () => video.classList.add("is-ready"),
-    { once: true }
-  );
   const tier = attachSources(video);
-  // Poster-only (slow / save-data): there is no video to start.
-  if (tier !== "poster") ensurePlaying(video);
+  // Poster-only (slow / save-data): nothing is downloaded, so `canplay` never
+  // fires and there is no video to start — skip both. Otherwise wire the
+  // poster→video cross-fade (on the first decodable frame) and resilient play.
+  if (tier !== "poster") {
+    video.addEventListener(
+      "canplay",
+      () => video.classList.add("is-ready"),
+      { once: true }
+    );
+    ensurePlaying(video);
+  }
   return tier;
 }
 
@@ -262,6 +265,15 @@ function mountDebugOverlay(timeline) {
 }
 
 function init() {
+  // Declared out here so the catch block can tear down anything that already
+  // started its rAF loop before a later line threw. Since the per-module
+  // visibility pausing now lives only in the power saver (which is wired last),
+  // a half-initialized timeline/glitch would otherwise leak an unbounded loop.
+  let timeline = null;
+  let glitch = null;
+  let scenes = null;
+  let power = null;
+
   // Error boundary: this is the seam where later tickets wire glitch.js and
   // scenes.js. Surface bootstrap failures instead of letting them vanish into
   // an uncaught module error.
@@ -271,7 +283,7 @@ function init() {
     const posterOnly = tier === "poster";
 
     const root = document.querySelector("[data-scroll-root]");
-    const timeline = createTimeline({ root });
+    timeline = createTimeline({ root });
 
     // WebGL sky-glitch hero: renders the playing video through the masked glitch
     // shader, driven by this same timeline. Returns null (and leaves the plain
@@ -280,7 +292,7 @@ function init() {
     // entirely on the poster-only tier: with no video frames to sample, spinning
     // a GL loop would only waste battery on the constrained connection.
     const glitchCanvas = document.querySelector("[data-glitch-canvas]");
-    const glitch = posterOnly
+    glitch = posterOnly
       ? null
       : initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
 
@@ -288,13 +300,13 @@ function init() {
     // Contact/Projects links — all timed off the same timeline so the text stays
     // in sync with the shader's glitch surges. Returns null (leaving the static
     // title/links visible) if the markup hooks are absent.
-    const scenes = initScenes({ timeline, debug: DEBUG });
+    scenes = initScenes({ timeline, debug: DEBUG });
 
     // Single battery/CPU authority: pauses the rAF loops + video when the hero
     // is offscreen or the tab is hidden, and resumes them together. timeline.js
     // and glitch.js delegate their visibility handling to this.
     const stage = document.querySelector(".stage");
-    const power = initPowerSaver({
+    power = initPowerSaver({
       video,
       stage,
       glitch,
@@ -319,6 +331,15 @@ function init() {
     // Reveal the static title/links: with the app down, scenes.js won't drive the
     // reveal, and the `js` gate would otherwise keep them permanently hidden.
     document.documentElement.classList.remove("js");
+    // Tear down whatever started before the throw so we don't leak a running rAF
+    // loop (each guarded — a destroy must not mask the original bootstrap error).
+    for (const controller of [power, glitch, scenes, timeline]) {
+      try {
+        controller?.destroy?.();
+      } catch (_) {
+        /* best-effort cleanup */
+      }
+    }
   }
 }
 
