@@ -11,6 +11,15 @@ import { createTimeline } from "./timeline.js";
 import { initGlitch } from "./glitch.js";
 import { initScenes } from "./scenes.js";
 
+// This module executing at all means the ES-module graph loaded successfully, so
+// cancel the inline self-heal fallback (index.html) that would otherwise reveal
+// the static title/links assuming the app failed to boot. scenes.js drives the
+// reveal from here on. (A bootstrap throw is handled in init()'s catch below.)
+if (typeof window !== "undefined" && window.__scrollNarrativeFallback) {
+  window.clearTimeout(window.__scrollNarrativeFallback);
+  window.__scrollNarrativeFallback = 0;
+}
+
 // Guard the location read so importing this module outside a browser
 // (test runner / SSR) doesn't blow up with an opaque module-load error.
 const params =
@@ -187,6 +196,9 @@ function init() {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("[glitch-portfolio] bootstrap failed", err);
+    // Reveal the static title/links: with the app down, scenes.js won't drive the
+    // reveal, and the `js` gate would otherwise keep them permanently hidden.
+    document.documentElement.classList.remove("js");
   }
 }
 

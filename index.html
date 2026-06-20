@@ -12,9 +12,18 @@
       scroll-driven title/outro can start hidden WITHOUT a flash of the static
       page. With JS disabled this class is never added, so styles.css leaves the
       title and links fully visible and legible.
+
+      Self-heal: this inline script always runs, but the actual reveal depends on
+      the ES-module app booting. If that pipeline fails (bad deploy, network blip,
+      a module syntax/runtime error), the fallback below removes `js` and reveals
+      the static title/links — never leaving the page stuck with no content (which
+      would be worse than the no-JS path). main.js cancels it the instant it runs.
     -->
     <script>
       document.documentElement.classList.add("js");
+      window.__scrollNarrativeFallback = window.setTimeout(function () {
+        document.documentElement.classList.remove("js");
+      }, 3000);
     </script>
   </head>
   <body>

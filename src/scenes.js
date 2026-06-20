@@ -115,7 +115,13 @@ export function outroFrame(scene, sp) {
  *   title nor the outro element is present (nothing to choreograph).
  */
 export function initScenes({ timeline, root = typeof document !== "undefined" ? document : null, debug = false } = {}) {
-  if (!timeline || !root) return null;
+  if (!timeline || !root) {
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.warn("[scenes] missing timeline or root → nothing to choreograph");
+    }
+    return null;
+  }
 
   const titleEl = root.querySelector("[data-title]");
   const outroEl = root.querySelector("[data-outro]");
