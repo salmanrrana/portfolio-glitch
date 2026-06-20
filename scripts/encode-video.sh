@@ -93,25 +93,25 @@ echo
 encode_h264() { # <width> <crf> <outfile>
   local w=$1 crf=$2 out=$3
   log "H.264  -> $out  (${w}px wide, crf $crf, preset $X264_PRESET)"
-  "$FFMPEG" -hide_banner -y -ss "$START" -t "$DURATION" -i "$SRC" \
+  "$FFMPEG" -hide_banner -loglevel error -y -ss "$START" -t "$DURATION" -i "$SRC" \
     -map 0:v:0 -an -map_metadata -1 \
     -vf "${TONEMAP},scale=${w}:-2,format=yuv420p" \
     -c:v libx264 -preset "$X264_PRESET" -profile:v high -crf "$crf" \
     -pix_fmt yuv420p "${COLOR_TAGS[@]}" \
     -movflags +faststart \
-    "$out" 2>/dev/null
+    "$out"
 }
 
 # --- VP9 WebM (1080 + 720) --------------------------------------------------
 encode_vp9() { # <width> <crf> <outfile>
   local w=$1 crf=$2 out=$3
   log "VP9    -> $out  (${w}px wide, crf $crf, cpu-used $VP9_CPU)"
-  "$FFMPEG" -hide_banner -y -ss "$START" -t "$DURATION" -i "$SRC" \
+  "$FFMPEG" -hide_banner -loglevel error -y -ss "$START" -t "$DURATION" -i "$SRC" \
     -map 0:v:0 -an -map_metadata -1 \
     -vf "${TONEMAP},scale=${w}:-2,format=yuv420p" \
     -c:v libvpx-vp9 -b:v 0 -crf "$crf" -row-mt 1 -deadline good -cpu-used "$VP9_CPU" \
     -pix_fmt yuv420p "${COLOR_TAGS[@]}" \
-    "$out" 2>/dev/null
+    "$out"
 }
 
 encode_h264 1920 "$CRF_1080" "$OUT_DIR/hero-1080.mp4"
@@ -123,12 +123,16 @@ encode_vp9  1280 "$VP9_CRF_720"  "$OUT_DIR/hero-720.webm"
 # Step the JPEG quality down until it fits the poster byte budget.
 log "Poster -> $OUT_DIR/hero-poster.jpg  (frame at ${POSTER_AT}s, <= ${POSTER_MAX_KB} KB)"
 poster="$OUT_DIR/hero-poster.jpg"
+kb=0
 for q in 4 5 6 7 8; do
-  "$FFMPEG" -hide_banner -y -ss "$POSTER_AT" -i "$SRC" -frames:v 1 -update 1 \
-    -vf "${TONEMAP},scale=${POSTER_W}:-2,format=yuv420p" -q:v "$q" "$poster" 2>/dev/null
+  "$FFMPEG" -hide_banner -loglevel error -y -ss "$POSTER_AT" -i "$SRC" -frames:v 1 -update 1 \
+    -vf "${TONEMAP},scale=${POSTER_W}:-2,format=yuv420p" -q:v "$q" "$poster"
   kb=$(( $(stat -c%s "$poster") / 1024 ))
   if [ "$kb" -le "$POSTER_MAX_KB" ]; then break; fi
 done
+if [ "$kb" -gt "$POSTER_MAX_KB" ]; then
+  warn "poster is ${kb} KB, still over the ${POSTER_MAX_KB} KB budget — lower POSTER_W or raise POSTER_MAX_KB."
+fi
 
 # --- faststart verification (no ffprobe/mediainfo needed) -------------------
 # Parses the MP4 top-level atom order and asserts moov appears before mdat.
