@@ -44,6 +44,17 @@
           aria-hidden="true"
         ></video>
 
+        <!--
+          WebGL sky-glitch canvas. main.js renders the playing <video> through a
+          fragment shader that corrupts only the masked sky and draws it here,
+          layered over the raw <video> (which keeps playing purely as the texture
+          source). It stays invisible until the first rendered frame, then CSS
+          cross-fades it in — so poster → video → glitch hands off seamlessly. If
+          WebGL/the mask is unavailable (or reduced-motion), it never activates
+          and the plain <video> remains the hero.
+        -->
+        <canvas class="stage__canvas" data-glitch-canvas aria-hidden="true"></canvas>
+
         <div class="stage__scrim" aria-hidden="true"></div>
 
         <div class="stage__content">

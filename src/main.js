@@ -8,6 +8,7 @@
 // ============================================================================
 
 import { createTimeline } from "./timeline.js";
+import { initGlitch } from "./glitch.js";
 
 // Guard the location read so importing this module outside a browser
 // (test runner / SSR) doesn't blow up with an opaque module-load error.
@@ -152,13 +153,23 @@ function init() {
   // scenes.js. Surface bootstrap failures instead of letting them vanish into
   // an uncaught module error.
   try {
-    initHeroVideo(document.querySelector("[data-hero-video]"));
+    const video = document.querySelector("[data-hero-video]");
+    initHeroVideo(video);
 
     const root = document.querySelector("[data-scroll-root]");
     const timeline = createTimeline({ root });
-    // Expose the single timeline instance so downstream modules (glitch shader,
-    // scene choreography) subscribe to the same clock instead of making their own.
-    window.glitchPortfolio = { timeline };
+
+    // WebGL sky-glitch hero: renders the playing video through the masked glitch
+    // shader, driven by this same timeline. Returns null (and leaves the plain
+    // <video> as the hero) when WebGL/the mask is unavailable or reduced-motion
+    // is set — so this line never breaks the baseline experience.
+    const glitchCanvas = document.querySelector("[data-glitch-canvas]");
+    const glitch = initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
+
+    // Expose the single timeline + glitch controller so downstream modules (the
+    // scene choreography, the hardening pass) subscribe to the same clock and can
+    // dial the glitch instead of making their own.
+    window.glitchPortfolio = { timeline, glitch };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";

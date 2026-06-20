@@ -85,6 +85,31 @@ body {
   opacity: 1;
 }
 
+/* --------------------------------------------------------------------------
+   WebGL sky-glitch canvas (src/glitch.js)
+   Sits directly over the raw video and renders the full hero frame (clean
+   foreground + masked, glitched sky). It is only made visible once glitch.js
+   has set data-glitch="on" on <html> AND drawn its first frame (.is-ready), so
+   the poster → video → glitch hand-off cross-fades with no pop. When WebGL/the
+   mask is unavailable or reduced-motion is set, data-glitch never turns on and
+   the plain <video> stays the hero (this canvas remains invisible).
+   -------------------------------------------------------------------------- */
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms ease;
+  will-change: opacity;
+}
+
+:root[data-glitch="on"] .stage__canvas.is-ready {
+  opacity: 1;
+}
+
 /* Subtle top+bottom gradient so overlaid text stays legible over the video. */
 .stage__scrim {
   position: absolute;

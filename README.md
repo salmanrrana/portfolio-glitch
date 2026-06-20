@@ -8,9 +8,11 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 
 > **Status:** the hero is live. A full-bleed, autoplaying hero video is pinned to the
 > viewport and a scroll-driven timeline engine (`src/timeline.js`) emits a smooth
-> `0..1` progress with named scene ranges. The sky mask, WebGL glitch shader, and
-> scroll narrative (title reveal/outro) arrive in later tickets and all subscribe to
-> this one timeline.
+> `0..1` progress with named scene ranges. The baked sky mask and the WebGL
+> sky-glitch shader (`src/glitch.js`) are live — the masked sky now corrupts in
+> and out with scroll while the field/hills/horses stay clean. The scroll
+> narrative (title reveal/outro) arrives in a later ticket and subscribes to this
+> same timeline.
 
 ## Project layout
 
@@ -18,8 +20,9 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 index.html              # single page; pinned full-bleed video stage + tall scroll container
 src/
   styles.css            # base styles + sticky-pinned full-viewport video stage
-  main.js               # ES-module entry: hero video bootstrap + timeline + ?debug overlay
+  main.js               # ES-module entry: hero video bootstrap + timeline + glitch + ?debug overlay
   timeline.js           # scroll-progress engine (rAF, 0..1, named scenes); subscribe(fn)
+  glitch.js             # WebGL masked sky-glitch shader; renders video→canvas, gated by sky-mask
 public/assets/          # encoded video, poster, sky-mask (committed); raw .MOV is NOT
 scripts/
   encode-video.sh       # transcode the raw hero .MOV → web-optimized assets
