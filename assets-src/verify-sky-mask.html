@@ -105,7 +105,11 @@
       const ctx = canvas.getContext("2d");
       const errEl = document.getElementById("err");
 
+      // A fatal load error stops the render loop so a blank/misaligned canvas
+      // can never masquerade as a valid result.
+      let broken = false;
       function fail(msg) {
+        broken = true;
         errEl.hidden = false;
         errEl.textContent = msg;
       }
@@ -120,13 +124,48 @@
       video.addEventListener("error", () =>
         fail(`Could not load ${VIDEO_SRC} — run scripts/encode-video.sh first.`)
       );
-      video.play().catch(() => {/* will retry via rAF once buffered */});
 
+      // Surface a blocked/failed autoplay instead of sitting on a black canvas.
+      // AbortError self-resolves (a pause()/src change raced play()); anything
+      // else (NotAllowedError, NotSupportedError) needs the user to know.
+      function play() {
+        const p = video.play();
+        if (p && p.catch) {
+          p.catch((err) => {
+            if (err && err.name !== "AbortError") {
+              fail(`video.play() failed (${err.name}) — click Play to start.`);
+            }
+          });
+        }
+      }
+      play();
+
+      // The mask is a grayscale PNG (no alpha), but the tint/punch composites
+      // need the mask VALUE in the alpha channel. Bake an alpha-keyed copy once
+      // on load: A = luminance, RGB = 0. Until that's ready, composites wait.
+      let maskAlpha = null; // HTMLCanvasElement once ready
       const mask = new Image();
-      mask.src = MASK_SRC;
+      mask.addEventListener("load", () => {
+        const c = document.createElement("canvas");
+        c.width = mask.naturalWidth;
+        c.height = mask.naturalHeight;
+        const mctx = c.getContext("2d");
+        mctx.drawImage(mask, 0, 0);
+        const id = mctx.getImageData(0, 0, c.width, c.height);
+        const d = id.data;
+        for (let i = 0; i < d.length; i += 4) {
+          d[i + 3] = d[i];               // alpha <- red (= luminance)
+          d[i] = d[i + 1] = d[i + 2] = 0; // colour comes from the fill, not here
+        }
+        mctx.putImageData(id, 0, 0);
+        maskAlpha = c;
+      });
       mask.addEventListener("error", () =>
         fail(`Could not load ${MASK_SRC} — run assets-src/make-sky-mask.py first.`)
       );
+      mask.src = MASK_SRC;
+
+      const maskReady = () => mask.complete && mask.naturalWidth > 0 && maskAlpha;
 
       // Offscreen used to colour the mask (red where sky) before compositing.
       const off = document.createElement("canvas");
@@ -185,66 +224,78 @@
       const playPause = document.getElementById("playPause");
       playPause.addEventListener("click", () => {
         playing = !playing;
-        if (playing) video.play(); else video.pause();
+        if (playing) play(); else video.pause();
         playPause.textContent = playing ? "Pause" : "Play";
       });
 
       const modeEl = document.getElementById("mode");
       const opacityEl = document.getElementById("opacity");
 
+      function drawHint(text) {
+        ctx.fillStyle = "#0b1120";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#8b95a7";
+        ctx.font = "14px ui-monospace, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        ctx.textAlign = "start";
+      }
+
       function frame() {
+        if (broken) return; // a fatal load error already told the user — stop.
+
         const { width: W, height: H } = canvas;
         const mode = modeEl.value;
         const overlay = parseFloat(opacityEl.value);
-
         ctx.clearRect(0, 0, W, H);
 
-        // Same cover rect for both textures (video natural size = mask size).
+        // Cover rects from each source's REAL dimensions (no hardcoded guess),
+        // so video and mask stay pixel-aligned and a resized mask can't drift.
         const vr = video.videoWidth
           ? coverRect(video.videoWidth, video.videoHeight, W, H)
           : null;
-        const mr = coverRect(mask.naturalWidth || 1920, mask.naturalHeight || 1080, W, H);
+        const mr = maskReady()
+          ? coverRect(mask.naturalWidth, mask.naturalHeight, W, H)
+          : null;
 
         if (mode === "mask") {
-          ctx.drawImage(mask, ...mr);
-          requestAnimationFrame(frame);
-          return;
+          if (mr) ctx.drawImage(mask, ...mr);
+          else drawHint("loading mask…");
+          return requestAnimationFrame(frame);
         }
 
         if (vr) ctx.drawImage(video, ...vr);
+        else drawHint("loading video…");
 
-        if (mode === "video") {
-          requestAnimationFrame(frame);
-          return;
+        // The composite modes need BOTH the video frame and the alpha-keyed
+        // mask; until both are ready, keep showing whatever we have.
+        if (mode !== "video" && vr && mr) {
+          if (mode === "punch") {
+            // Video ONLY through the sky (mask=white); foreground blacked out —
+            // a stark read of exactly which pixels glitch.
+            offCtx.clearRect(0, 0, W, H);
+            offCtx.drawImage(video, ...vr);
+            offCtx.globalCompositeOperation = "destination-in";
+            offCtx.drawImage(maskAlpha, ...mr);
+            offCtx.globalCompositeOperation = "source-over";
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, W, H);
+            ctx.drawImage(off, 0, 0);
+          } else {
+            // "tint": red where the mask says sky, strength = overlay slider.
+            offCtx.clearRect(0, 0, W, H);
+            offCtx.drawImage(maskAlpha, ...mr);
+            offCtx.globalCompositeOperation = "source-in";
+            offCtx.fillStyle = "#ff0033";
+            offCtx.fillRect(0, 0, W, H);
+            offCtx.globalCompositeOperation = "source-over";
+            ctx.globalAlpha = overlay;
+            ctx.drawImage(off, 0, 0);
+            ctx.globalAlpha = 1;
+          }
         }
 
-        if (mode === "punch") {
-          // Show the video ONLY through the sky (mask=white); black out the
-          // protected foreground — a stark read of exactly what glitches.
-          offCtx.clearRect(0, 0, W, H);
-          if (vr) offCtx.drawImage(video, ...vr);
-          offCtx.globalCompositeOperation = "destination-in";
-          offCtx.drawImage(mask, ...mr);
-          offCtx.globalCompositeOperation = "source-over";
-          ctx.fillStyle = "#000";
-          ctx.fillRect(0, 0, W, H);
-          ctx.drawImage(off, 0, 0);
-          requestAnimationFrame(frame);
-          return;
-        }
-
-        // mode === "tint": red where the mask says sky, alpha = overlay.
-        offCtx.clearRect(0, 0, W, H);
-        offCtx.drawImage(mask, ...mr);
-        offCtx.globalCompositeOperation = "source-in";
-        offCtx.fillStyle = "#ff0033";
-        offCtx.fillRect(0, 0, W, H);
-        offCtx.globalCompositeOperation = "source-over";
-        ctx.globalAlpha = overlay;
-        ctx.drawImage(off, 0, 0);
-        ctx.globalAlpha = 1;
-
-        requestAnimationFrame(frame);
+        return requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
     </script>

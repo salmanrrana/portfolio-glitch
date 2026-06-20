@@ -78,6 +78,7 @@ UV MAPPING (for the WebGL shader ticket)
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -102,11 +103,26 @@ FEATHER_RADIUS = 5   # px Gaussian blur for a soft, seamless edge
 COL_MIN_WINDOW = 9   # horizontal min-filter window (protect between-col branches)
 
 
+def ensure_dir(path):
+    """makedirs for a file's parent, tolerating a bare filename (no dir part)."""
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+
+
 def run_ffmpeg_frame(time_s, dst):
-    """Extract a single frame at `time_s` from the encoded hero video."""
+    """Extract a single frame at `time_s` from the encoded hero video.
+
+    ffmpeg exits 0 even when `time_s` is past the clip's end (it just writes no
+    frame), so we explicitly confirm the frame landed instead of failing later
+    with an opaque 'file not found' on the read side.
+    """
     cmd = [FFMPEG, "-loglevel", "error", "-y", "-ss", str(time_s),
            "-i", VIDEO, "-frames:v", "1", dst]
     subprocess.run(cmd, check=True)
+    if not os.path.exists(dst):
+        sys.exit(f"[make-sky-mask] ffmpeg wrote no frame at t={time_s}s "
+                 f"(seek may exceed the clip duration). Adjust SAMPLE_TIMES.")
 
 
 def is_sky(rgb):
@@ -164,15 +180,23 @@ def horizontal_min(arr, window):
 
 
 def main():
+    if not shutil.which(FFMPEG):
+        sys.exit(f"[make-sky-mask] ffmpeg not found on PATH (FFMPEG={FFMPEG!r}). "
+                 f"Install ffmpeg or set FFMPEG to its path, then retry.")
     if not os.path.exists(VIDEO):
         sys.exit(f"[make-sky-mask] video not found: {VIDEO} (run the encode script first)")
 
     tmp = tempfile.mkdtemp(prefix="skymask_")
-    frames = []
-    for i, t in enumerate(SAMPLE_TIMES):
-        dst = os.path.join(tmp, f"f{i}.png")
-        run_ffmpeg_frame(t, dst)
-        frames.append(np.asarray(Image.open(dst).convert("RGB")))
+    try:
+        frames = []
+        for i, t in enumerate(SAMPLE_TIMES):
+            dst = os.path.join(tmp, f"f{i}.png")
+            run_ffmpeg_frame(t, dst)
+            frames.append(np.asarray(Image.open(dst).convert("RGB")))
+        if len(frames) != len(SAMPLE_TIMES):
+            sys.exit(f"[make-sky-mask] expected {len(SAMPLE_TIMES)} frames, got {len(frames)}")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
     h, w, _ = frames[0].shape
     print(f"[make-sky-mask] {len(frames)} frames @ {w}x{h}")
@@ -193,7 +217,7 @@ def main():
     mask_img = Image.fromarray(mask.astype(np.uint8), mode="L")
     mask_img = mask_img.filter(ImageFilter.GaussianBlur(FEATHER_RADIUS))
 
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    ensure_dir(OUT)
     mask_img.save(OUT)
     sky_pct = 100.0 * float(boundary.mean()) / h
     print(f"[make-sky-mask] wrote {OUT}  (sky covers ~{sky_pct:.1f}% of height)")
@@ -211,7 +235,7 @@ def main():
         yb = int(boundary[x])
         if 0 <= yb < h:
             overlaid[max(0, yb - 1):yb + 1, x] = (0, 255, 0)
-    os.makedirs(os.path.dirname(OVERLAY), exist_ok=True)
+    ensure_dir(OVERLAY)
     overlay_img = Image.fromarray(np.clip(overlaid, 0, 255).astype(np.uint8))
     # JPEG keeps this evidence frame small (it's a screenshot, not an asset).
     save_kwargs = {"quality": 88} if OVERLAY.lower().endswith((".jpg", ".jpeg")) else {}
