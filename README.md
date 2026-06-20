@@ -6,17 +6,20 @@ only the **sky** region of the video glitches (RGB-split, displacement, datamosh
 the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — hosted on
 **Netlify**.
 
-> **Status:** scaffold. The video pipeline, scroll engine, sky mask, WebGL glitch shader,
-> and scroll narrative arrive in later tickets. Right now `index.html` renders a
-> full-viewport placeholder hero so the deploy loop is proven end to end.
+> **Status:** the hero is live. A full-bleed, autoplaying hero video is pinned to the
+> viewport and a scroll-driven timeline engine (`src/timeline.js`) emits a smooth
+> `0..1` progress with named scene ranges. The sky mask, WebGL glitch shader, and
+> scroll narrative (title reveal/outro) arrive in later tickets and all subscribe to
+> this one timeline.
 
 ## Project layout
 
 ```
-index.html              # single page; links src/styles.css + src/main.js (module)
+index.html              # single page; pinned full-bleed video stage + tall scroll container
 src/
-  styles.css            # base styles + full-viewport hero
-  main.js               # ES-module entry point (bootstrap + ?debug hook)
+  styles.css            # base styles + sticky-pinned full-viewport video stage
+  main.js               # ES-module entry: hero video bootstrap + timeline + ?debug overlay
+  timeline.js           # scroll-progress engine (rAF, 0..1, named scenes); subscribe(fn)
 public/assets/          # encoded video, poster, sky-mask (committed); raw .MOV is NOT
 scripts/
   encode-video.sh       # transcode the raw hero .MOV → web-optimized assets
@@ -73,8 +76,24 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-Append `?debug` to the URL (e.g. `http://localhost:8000/?debug`) to enable the debug
-hook. The full live progress/scene overlay is wired up by the timeline-engine ticket.
+Append `?debug` to the URL (e.g. `http://localhost:8000/?debug`) for a live overlay
+showing scroll progress, the raw target, scroll velocity, and the active scene + its
+local progress — handy for calibrating the glitch/reveal timing in later tickets. The
+overlay is only mounted when the flag is present; it is absent from normal output.
+
+### Hero video + timeline (this section's tickets)
+
+- **Full-bleed video:** `index.html` holds a sticky-pinned `.stage` (full viewport via
+  `100svh`/`100dvh`) with a background hero `<video>` (`object-fit: cover`, autoplay,
+  muted, looped, `playsinline`). The poster paints instantly via CSS background and the
+  video cross-fades in on `canplay`. `src/main.js` injects the 720-vs-1080 `<source>`s
+  per viewport so the browser never pre-fetches an unused resolution.
+- **Scroll timeline:** `src/timeline.js` exposes `createTimeline({ root })` →
+  `subscribe(fn)` / `getState()`. It samples scroll once per `requestAnimationFrame`,
+  lerp-smooths it to a `0..1` `progress`, and exposes named scene ranges via `SCENES`
+  (`glitchInOut`, `titleReveal`, `titleFade`, `glitchWave2`, `outro`) plus `sceneAt()`
+  and `sceneProgress()` helpers. Downstream tickets subscribe here rather than reading
+  scroll themselves. Editing scene boundaries: change the ranges in `SCENES`.
 
 ## Deploy to Netlify
 

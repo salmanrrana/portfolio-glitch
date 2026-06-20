@@ -9,11 +9,6 @@
     <link rel="stylesheet" href="src/styles.css" />
   </head>
   <body>
-    <!--
-      Placeholder hero. Later tickets replace the internals with the
-      full-bleed video + WebGL sky-glitch shader. The structure (a pinned
-      full-viewport stage) is the foundation everything else builds on.
-    -->
     <noscript>
       <p class="noscript-note">
         This portfolio uses JavaScript (and WebGL) for its scroll-driven sky-glitch
@@ -21,15 +16,42 @@
       </p>
     </noscript>
 
-    <main>
-      <section class="hero" aria-label="Intro">
-        <div class="hero__inner">
+    <!--
+      Tall scroll container (400vh) drives the timeline. The visual stage inside
+      it is sticky-pinned to the viewport, so scrolling advances the experience
+      (progress 0..1) while the hero stays full-bleed. Later tickets layer the
+      WebGL sky-glitch canvas over this same stage and the title reveal/outro
+      onto the timeline. data-scroll-root is what timeline.js measures.
+    -->
+    <main class="scroll" data-scroll-root>
+      <section class="stage" aria-label="Salman R Rana — Software Engineer">
+        <!--
+          Full-bleed background hero video. Decorative (aria-hidden): the
+          accessible title lives in .stage__content below. Sources are injected
+          by main.js so the right resolution (720 vs 1080) is chosen per device
+          without the browser pre-fetching a size it won't use. The poster paints
+          instantly via CSS background; the video fades in on `canplay`.
+        -->
+        <video
+          class="stage__video"
+          data-hero-video
+          poster="public/assets/hero-poster.jpg"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        ></video>
+
+        <div class="stage__scrim" aria-hidden="true"></div>
+
+        <div class="stage__content">
           <h1 class="hero__title">
             <span class="hero__name">Salman R Rana</span>
             <span class="hero__sep" aria-hidden="true">||</span>
             <span class="hero__role">Software Engineer</span>
           </h1>
-          <p class="hero__tagline">Scroll-driven sky-glitch splash — coming together one ticket at a time.</p>
         </div>
       </section>
     </main>

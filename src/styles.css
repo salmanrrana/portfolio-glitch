@@ -1,8 +1,8 @@
 /* ==========================================================================
    Glitch Portfolio — base styles
-   Mobile-first, zero-dependency. The placeholder hero here is replaced by
-   the video + WebGL stage in later tickets; the layout primitives (reset,
-   full-viewport hero, type scale) carry forward.
+   Mobile-first, zero-dependency. The hero is a full-viewport video pinned via
+   a sticky stage inside a tall scroll container; scroll advances the timeline.
+   Later tickets layer the WebGL sky-glitch canvas + scroll narrative on top.
    ========================================================================== */
 
 :root {
@@ -36,25 +36,74 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Full-viewport hero stage. 100svh/100dvh keep it correct against the
-   mobile address bar; 100vh is the fallback for older browsers. */
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* --------------------------------------------------------------------------
+   Scroll container + pinned stage
+   The container is intentionally tall (400vh); the stage sticks to the top of
+   the viewport and stays full-bleed while the extra height gives the timeline
+   room to run 0..1. No scroll-jacking — this is native sticky scrolling.
+   -------------------------------------------------------------------------- */
+.scroll {
+  position: relative;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  padding: clamp(1.5rem, 5vw, 4rem);
-  text-align: center;
-  background:
-    radial-gradient(120% 90% at 50% 10%, #12182b 0%, #05060a 60%, #020306 100%);
-  overflow: hidden;
+  /* Tall spacer drives the timeline. ~4 viewport heights of travel. */
+  height: 400vh;
 }
 
-.hero__inner {
-  max-width: 60rem;
+.stage {
+  position: sticky;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  /* 100svh/100dvh keep the stage correct against the mobile address bar;
+     100vh is the fallback for browsers without the newer viewport units. */
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  /* Poster paints here instantly (cover-fit to match the video) so first paint
+     never waits on video decode. The video fades in over it on `canplay`. */
+  background: var(--bg) url("../public/assets/hero-poster.jpg") center / cover no-repeat;
+}
+
+/* Full-bleed background video: object-fit: cover, edge-to-edge, no letterbox. */
+.stage__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Start hidden; main.js adds .is-ready on `canplay` to cross-fade from the
+     poster background to the live video without a hard pop. */
+  opacity: 0;
+  transition: opacity 600ms ease;
+  will-change: opacity;
+}
+
+.stage__video.is-ready {
+  opacity: 1;
+}
+
+/* Subtle top+bottom gradient so overlaid text stays legible over the video. */
+.stage__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 6, 10, 0.45) 0%,
+    rgba(5, 6, 10, 0) 30%,
+    rgba(5, 6, 10, 0) 60%,
+    rgba(5, 6, 10, 0.55) 100%
+  );
+}
+
+.stage__content {
+  position: relative;
+  z-index: 1;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  text-align: center;
 }
 
 .noscript-note {
@@ -66,6 +115,10 @@ body {
   font-family: var(--font-mono);
 }
 
+/* --------------------------------------------------------------------------
+   Title (placeholder positioning for now; the scroll-narrative ticket wires
+   its reveal/fade to the timeline). Type scale carries forward.
+   -------------------------------------------------------------------------- */
 .hero__title {
   display: flex;
   flex-wrap: wrap;
@@ -77,6 +130,7 @@ body {
   font-size: clamp(2rem, 8vw, 5.5rem);
   line-height: 1.05;
   letter-spacing: -0.02em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
 }
 
 .hero__name {
@@ -93,12 +147,28 @@ body {
   color: var(--accent-2);
 }
 
-.hero__tagline {
-  margin: clamp(1rem, 3vw, 1.75rem) auto 0;
-  max-width: 38rem;
-  color: var(--muted);
-  font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+/* --------------------------------------------------------------------------
+   Debug overlay (only mounted by main.js when the URL carries ?debug).
+   Lives outside the normal flow; never present in production output.
+   -------------------------------------------------------------------------- */
+.debug-overlay {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
   font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--accent);
+  background: rgba(5, 6, 10, 0.82);
+  border: 1px solid rgba(94, 242, 214, 0.35);
+  border-radius: 6px;
+  white-space: pre;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
