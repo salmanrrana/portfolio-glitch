@@ -26,13 +26,41 @@
 const VIDEO_ASPECT = 16 / 9;
 
 // Cap the backing-store resolution. WebGL cost scales with pixel count; 2x is
-// plenty crisp on a HiDPI laptop. The hardening ticket clamps this further on
-// phones (where fill-rate, not sharpness, is the constraint).
+// plenty crisp on a HiDPI laptop.
 const MAX_DPR = 2;
+
+// Phones are fill-rate bound, not sharpness bound: this is a full-screen,
+// fragment-heavy pass, so DPR 3 on a phone melts the framerate for no visible
+// gain. Clamp harder on coarse-pointer / small-viewport devices.
+const MAX_DPR_MOBILE = 1.5;
+
+// Dropped-frame watchdog: if we can't sustain ~60fps (weak GPU / thermal
+// throttle), step the internal resolution down by this factor, no lower than
+// MIN_QUALITY. Downgrade-only — we never step back up, to avoid oscillating
+// around the threshold.
+const MIN_QUALITY = 0.5;
+const QUALITY_STEP = 0.25;
+// Sustained average frame time above this (≈ < 45fps) trips a downgrade.
+const SLOW_FRAME_MS = 22;
+// Samples averaged before judging — ~1s at 60fps, long enough to ignore one-off
+// hitches (GC, a scroll spike) and only react to a sustained shortfall.
+const FRAME_WINDOW = 60;
 
 const MASK_URL = "public/assets/sky-mask.png";
 
 const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+
+/**
+ * Per-device ceiling on the backing-store DPR, before the dynamic quality scale.
+ * @returns {number}
+ */
+function maxDprForDevice() {
+  const coarse =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+  const small = Math.min(window.innerWidth, window.innerHeight) <= 900;
+  return coarse || small ? MAX_DPR_MOBILE : MAX_DPR;
+}
 
 // ---------------------------------------------------------------------------
 // Shaders
@@ -367,11 +395,21 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
   let running = false;
   let active = false; // true once mask + first video frame are up and we've revealed the canvas
   let destroyed = false;
+  let disabled = false; // set when we fall back permanently (context lost / fatal upload)
   let startTime = 0; // set on first frame (Date.now is fine; only used for shader time)
   let intensity = 0;
   let intensityScale = 1;
   let parallaxX = 0;
   let parallaxY = 0;
+
+  // Dynamic quality (dropped-frame watchdog). Scales the device DPR cap down on
+  // weak GPUs to protect 60fps. lastTs/frameAccum/frameCount accumulate the
+  // rolling frame-time average; reset on every (re)start so a pause gap or the
+  // first post-resume frame never counts as a slow frame.
+  let qualityScale = 1;
+  let lastTs = 0;
+  let frameAccum = 0;
+  let frameCount = 0;
 
   // Latest timeline state, refreshed by the subscriber. We read it in the draw
   // loop rather than rendering from inside the timeline tick so the GL frame is
@@ -382,12 +420,29 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
   });
 
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const dpr =
+      Math.min(window.devicePixelRatio || 1, maxDprForDevice()) * qualityScale;
     const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
     const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;
+    }
+  }
+
+  // Roll the frame-time average and, on a sustained shortfall, step the internal
+  // resolution down (re-applied by resize() next frame). Downgrade-only.
+  function monitorFrame(tsMs) {
+    if (!active || !lastTs) return; // skip the first frame after each (re)start
+    frameAccum += tsMs - lastTs;
+    frameCount++;
+    if (frameCount < FRAME_WINDOW) return;
+    const avgMs = frameAccum / frameCount;
+    frameAccum = 0;
+    frameCount = 0;
+    if (avgMs > SLOW_FRAME_MS && qualityScale > MIN_QUALITY) {
+      qualityScale = Math.max(MIN_QUALITY, qualityScale - QUALITY_STEP);
+      warn(`frame budget exceeded (${avgMs.toFixed(1)}ms avg) → quality ${qualityScale.toFixed(2)}`);
     }
   }
 
@@ -418,6 +473,8 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     raf = window.requestAnimationFrame(draw);
 
     resize();
+    monitorFrame(tsMs);
+    lastTs = tsMs;
 
     // Upload the current video frame. Guard until the video actually has pixels;
     // before that the poster (CSS background) is what the user sees.
@@ -474,7 +531,14 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
   }
 
   function start() {
-    if (running || destroyed) return;
+    // `disabled` covers a permanent fallback (context lost / fatal upload): the
+    // power saver may call resume() on tab-return, and we must not revive a dead
+    // GL path. Reset the frame-time accumulators so the gap while paused — or the
+    // first frame after resuming — never counts as a slow frame.
+    if (running || destroyed || disabled) return;
+    lastTs = 0;
+    frameAccum = 0;
+    frameCount = 0;
     running = true;
     raf = window.requestAnimationFrame(draw);
   }
@@ -487,8 +551,10 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     }
   }
 
-  // Tear down the GL path and hand the hero back to the plain <video>.
+  // Tear down the GL path and hand the hero back to the plain <video>. This is a
+  // one-way trip: `disabled` blocks any later resume() from reviving a dead path.
   function fallback() {
+    disabled = true;
     stop();
     document.documentElement.dataset.glitch = "off";
     canvas.classList.remove("is-ready");
@@ -502,13 +568,10 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
   }
   canvas.addEventListener("webglcontextlost", onContextLost, false);
 
-  // --- pause when the tab is hidden (battery); the hardening ticket adds the
-  //     IntersectionObserver offscreen case on top of this. ------------------
-  function onVisibility() {
-    if (document.hidden) stop();
-    else start();
-  }
-  document.addEventListener("visibilitychange", onVisibility);
+  // Pausing while the tab is hidden / the hero is offscreen (to save battery) is
+  // owned by the single power-saver authority in main.js, which calls pause()/
+  // resume() here alongside the timeline and the video. (No own visibilitychange
+  // listener — one authority avoids the two fighting over the run state.)
 
   // Signal CSS that the glitch canvas owns the hero. The canvas itself only
   // becomes visible once `.is-ready` is added (first rendered frame), so the
@@ -550,7 +613,6 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
       stop();
       unsubscribe();
       canvas.removeEventListener("webglcontextlost", onContextLost, false);
-      document.removeEventListener("visibilitychange", onVisibility);
       gl.deleteTexture(videoTex);
       if (maskTex) gl.deleteTexture(maskTex);
       gl.deleteBuffer(buffer);

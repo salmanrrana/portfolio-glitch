@@ -6,14 +6,17 @@ only the **sky** region of the video glitches (RGB-split, displacement, datamosh
 the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — hosted on
 **Netlify**.
 
-> **Status:** the hero is live. A full-bleed, autoplaying hero video is pinned to the
+> **Status:** complete. A full-bleed, autoplaying hero video is pinned to the
 > viewport and a scroll-driven timeline engine (`src/timeline.js`) emits a smooth
 > `0..1` progress with named scene ranges. The baked sky mask and the WebGL
 > sky-glitch shader (`src/glitch.js`) are live — the masked sky now corrupts in
 > and out with scroll while the field/hills/horses stay clean. The scroll
 > narrative (`src/scenes.js`) is live too: the title reveals out of the glitch,
 > fades, and the experience ends on a clean outro with Contact/Projects links.
-> Cross-device performance/accessibility hardening is the final ticket.
+> The final cross-device hardening pass is in — adaptive/connection-aware media
+> loading, battery-saving pause when hidden/offscreen, weak-GPU degradation, and
+> a keyboard/reduced-motion path to the links (see **Performance & accessibility**
+> below).
 
 ## Project layout
 
@@ -162,6 +165,71 @@ The two calls-to-action are plain anchors in `index.html` (look for `<nav class=
 
 - **Contact** — change the `mailto:` address.
 - **Projects** — replace the `#projects` placeholder with the real projects URL.
+
+## Performance & accessibility (hardening)
+
+The closeout pass makes good on "loads fast as hell on any device" and stays
+usable for everyone. All of it is dependency-free.
+
+**Adaptive media loading** (`src/main.js`, `pickTier()`): the `<video>` sources are
+chosen per device *and* connection, so a phone on a slow link never pulls the
+desktop encode:
+
+| Condition                                              | Loads                    |
+| ------------------------------------------------------ | ------------------------ |
+| `navigator.connection.saveData`, or `slow-2g` / `2g`   | **poster only** (0 MB video; the WebGL loop is skipped too) |
+| `effectiveType: 3g`, or viewport ≤ 800px               | **720p** (`hero-720.*`)  |
+| everything else                                        | **1080p** (`hero-1080.*`) |
+
+The poster paints first via CSS background (instant first paint); the video
+cross-fades in on `canplay`, so video bytes never block the initial render.
+`navigator.connection` is non-standard — when it's absent we fall back to
+viewport width alone.
+
+**Battery / CPU** (`src/main.js` `initPowerSaver`, `src/glitch.js`, `src/timeline.js`):
+one authority (an `IntersectionObserver` on the stage + `visibilitychange`)
+pauses the rAF loops **and** the video decode whenever the hero is offscreen or
+the tab is backgrounded, and resumes them together. The shader also caps the
+canvas backing store by DPR (1.5× on phones, 2× elsewhere) and **degrades
+automatically**: a dropped-frame watchdog steps the internal resolution down
+(never up, to avoid oscillation) if it can't hold ~60fps on a weak GPU.
+
+**Graceful degradation:** no WebGL, a failed mask load, or a lost GL context all
+fall back to the plain `<video>` hero with no broken state; the power saver keeps
+managing the video either way.
+
+**Accessibility / reduced motion:**
+
+- A **skip link** (first focusable element) and a minimal **quick-links nav**
+  (`<nav id="site-nav">`) give keyboard and `prefers-reduced-motion` users
+  Contact/Projects **without** scrolling the full 400vh — the nav reveals on
+  keyboard focus and is shown persistently under reduced motion. Keep its hrefs
+  in sync with the outro `<nav class="outro">` (both are documented inline).
+- `prefers-reduced-motion: reduce` drops the WebGL glitch (plain video hero) and
+  the title/link blur/drift/chroma — same beats, calm cross-fades.
+- `lang`, `<title>`, `<meta name="description">`, Open Graph + Twitter card tags,
+  `theme-color`, and `color-scheme` are all present. Update `og:url` / `og:image`
+  to absolute URLs once the Netlify domain is known (noted inline in `index.html`).
+
+### Lighthouse
+
+Run on the **deployed** mobile profile (a local `file://`/dev server skews the
+numbers — measure the real Netlify URL):
+
+```sh
+# needs Chrome + the lighthouse CLI (npm i -g lighthouse)
+lighthouse https://YOUR-SITE.netlify.app/ \
+  --preset=desktop=false --form-factor=mobile --only-categories=performance,accessibility \
+  --output=html --output-path=./lighthouse-mobile.html
+```
+
+**Measured run:** not captured in this environment — no Chrome/Lighthouse binary
+and no public URL are available here (documented blocker). The build is
+structured to clear the targets: first paint is the **~188 KB poster** plus
+~6 KB HTML / ~13 KB CSS / ~46 KB JS (all non-blocking, no framework), and the
+video is adaptive, `+faststart`, and deferred — so LCP is the poster, not the
+multi-MB video. Re-run the command above after the first Netlify deploy and
+paste the Performance/Accessibility scores here.
 
 ## Deploy to Netlify
 

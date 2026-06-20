@@ -184,6 +184,11 @@ export function createTimeline(options = {}) {
 
   function start() {
     if (running) return;
+    // Re-seed the smoothed value to the current scroll on every cold start so a
+    // resume (after the power saver paused us while hidden/offscreen) snaps to
+    // where the page actually is instead of animating a big catch-up sweep.
+    smoothed = readRaw();
+    prevSmoothed = smoothed;
     running = true;
     rafId = window.requestAnimationFrame(tick);
   }
@@ -214,25 +219,14 @@ export function createTimeline(options = {}) {
     return () => subscribers.delete(fn);
   }
 
-  // Pause the loop when the tab is hidden — there is nothing to animate and it
-  // saves battery. (The hardening ticket extends this with IntersectionObserver
-  // for the offscreen case.) On resume, re-seed the smoothed value to the
-  // current scroll so we don't animate a big catch-up jump.
-  function onVisibility() {
-    if (document.hidden) {
-      stop();
-    } else {
-      smoothed = readRaw();
-      prevSmoothed = smoothed;
-      start();
-    }
-  }
-  document.addEventListener("visibilitychange", onVisibility);
-
+  // Pausing while the tab is hidden / the hero is offscreen (to save battery) is
+  // owned by the single power-saver authority in main.js, which calls stop()/
+  // start() here alongside the glitch loop and the video. start() re-seeds, so
+  // resuming never animates a catch-up jump. (Timeline no longer attaches its
+  // own visibilitychange listener — one authority avoids the two fighting.)
   function destroy() {
     stop();
     subscribers.clear();
-    document.removeEventListener("visibilitychange", onVisibility);
   }
 
   start();

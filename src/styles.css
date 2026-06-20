@@ -274,6 +274,93 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Non-scroll access: skip link + minimal quick-links nav (hardening / a11y)
+
+   The Contact/Projects calls-to-action only reveal at the end of the 400vh
+   scroll. Keyboard and prefers-reduced-motion users get to them here without
+   scrolling:
+     - .skip-link is the first focusable element; visually hidden until focused.
+     - .site-nav is always in the DOM and focusable but kept out of the way
+       during the full-motion experience; it slides in on :focus-within (so the
+       moment a keyboard user tabs in, it appears) and is shown persistently
+       under reduced motion (where the scroll-driven outro reveal is dialed down).
+   pointer-events stay off until shown so mouse users still get the clean splash
+   and reach the same links via the outro; keyboard focus is unaffected by that.
+   -------------------------------------------------------------------------- */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 10000;
+  transform: translate(-50%, -120%);
+  padding: 0.75rem 1.25rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translate(-50%, 0);
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.site-nav {
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  z-index: 60;
+  display: flex;
+  gap: 0.4rem;
+  /* Out of the way during the full-motion experience: invisible and
+     non-clickable, but the links stay focusable so a keyboard Tab reveals it. */
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.site-nav:focus-within {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.site-nav__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  text-decoration: none;
+  background: rgba(5, 6, 10, 0.72);
+  border: 1px solid rgba(244, 246, 251, 0.4);
+  border-radius: 999px;
+  transition: color 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+
+.site-nav__link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.site-nav__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
    Debug overlay (only mounted by main.js when the URL carries ?debug).
    Lives outside the normal flow; never present in production output.
    -------------------------------------------------------------------------- */
@@ -304,5 +391,13 @@ body {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+
+  /* Reduced-motion users don't get the scroll-driven outro reveal as their
+     primary path, so surface the quick-links nav persistently and clickable. */
+  .site-nav {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
   }
 }

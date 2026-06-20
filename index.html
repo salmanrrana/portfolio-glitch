@@ -5,7 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Salman R Rana — Software Engineer. A scroll-driven sky-glitch splash portfolio." />
     <meta name="theme-color" content="#05060a" />
+    <!-- The design is dark; declaring it keeps form controls / UA chrome dark and
+         stops a flash of a white poster background on first paint. -->
+    <meta name="color-scheme" content="dark light" />
     <title>Salman R Rana — Software Engineer</title>
+
+    <!--
+      Social / Open Graph + Twitter cards. The poster doubles as the share image.
+      ┌─ EDIT ON DEPLOY ───────────────────────────────────────────────────────┐
+      │ og:url and og:image should be ABSOLUTE URLs once the Netlify domain is   │
+      │ known (most scrapers resolve relative og:image, but absolute is safest). │
+      │ Replace https://example.netlify.app with the real site URL.             │
+      └──────────────────────────────────────────────────────────────────────────┘
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Salman R Rana — Software Engineer" />
+    <meta property="og:description" content="A scroll-driven sky-glitch splash portfolio." />
+    <meta property="og:image" content="public/assets/hero-poster.jpg" />
+    <meta property="og:url" content="https://example.netlify.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Salman R Rana — Software Engineer" />
+    <meta name="twitter:description" content="A scroll-driven sky-glitch splash portfolio." />
+    <meta name="twitter:image" content="public/assets/hero-poster.jpg" />
     <link rel="stylesheet" href="src/styles.css" />
     <!--
       Progressive enhancement flag, set synchronously before first paint so the
@@ -27,6 +48,25 @@
     </script>
   </head>
   <body>
+    <!--
+      Non-scroll access to the calls-to-action (hardening / a11y).
+
+      The narrative reveals Contact/Projects only at the end of a 400vh scroll, so
+      keyboard and prefers-reduced-motion users need a path that doesn't require
+      the full journey. This skip link + minimal nav provides it:
+        • The skip link is the first focusable element — Tab once, Enter, and the
+          nav is focused/revealed (classic a11y skip pattern).
+        • The nav is always in the DOM and focusable; it stays visually out of the
+          way during the full-motion experience and slides in on focus, and is
+          shown persistently under reduced motion (where there is no scroll show).
+      Keep these hrefs in sync with the outro <nav class="outro"> below.
+    -->
+    <a class="skip-link" href="#site-nav">Skip to contact &amp; projects</a>
+    <nav class="site-nav" id="site-nav" aria-label="Quick links">
+      <a class="site-nav__link" href="mailto:mrhuman515@gmail.com">Contact</a>
+      <a class="site-nav__link" href="#projects">Projects</a>
+    </nav>
+
     <noscript>
       <p class="noscript-note">
         This portfolio uses JavaScript (and WebGL) for its scroll-driven sky-glitch

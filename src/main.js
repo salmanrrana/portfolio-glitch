@@ -43,30 +43,54 @@ const VIDEO_SOURCES = {
 };
 
 /**
- * Choose a resolution tier for the current viewport. Deliberately simple here —
- * the hardening ticket layers in `navigator.connection`/save-data awareness.
- * Small viewports get the lighter 720 encodes; everything else gets 1080.
- * @returns {720 | 1080}
+ * Choose a media tier for the current viewport AND connection. Save-data or a
+ * 2G-class link stays poster-only — no multi-MB video download at all (the CSS
+ * poster background remains the hero). A 3G link or a small viewport gets the
+ * lighter 720 encodes; everything else gets 1080. `navigator.connection` is
+ * non-standard but available on the mobile browsers that need this most; when
+ * it's absent we fall back to viewport width alone.
+ * @returns {"poster" | 720 | 1080}
  */
 function pickTier() {
+  const conn =
+    typeof navigator !== "undefined"
+      ? navigator.connection || navigator.mozConnection || navigator.webkitConnection
+      : null;
+  if (conn) {
+    if (conn.saveData) return "poster";
+    const et = conn.effectiveType;
+    if (et === "slow-2g" || et === "2g") return "poster";
+    if (et === "3g") return 720;
+  }
   const w = window.innerWidth || document.documentElement.clientWidth || 1080;
   return w <= 800 ? 720 : 1080;
 }
 
 /**
  * Inject the chosen <source>s and kick off loading. Sources live in JS (not the
- * HTML) so the browser never pre-fetches a resolution it won't use.
+ * HTML) so the browser never pre-fetches a resolution it won't use. On the
+ * poster-only tier nothing is downloaded — the poster background stays the hero.
  * @param {HTMLVideoElement} video
+ * @returns {"poster" | 720 | 1080} the chosen tier (so the caller can skip
+ *   video-dependent work — autoplay, the WebGL renderer — when poster-only).
  */
 function attachSources(video) {
-  const sources = VIDEO_SOURCES[pickTier()];
-  for (const { src, type } of sources) {
+  const tier = pickTier();
+  if (tier === "poster") {
+    // Slow / save-data path: don't pull megabytes of video. Drop the preload so
+    // the browser fetches nothing beyond the already-painted poster.
+    video.preload = "none";
+    video.removeAttribute("autoplay");
+    return tier;
+  }
+  for (const { src, type } of VIDEO_SOURCES[tier]) {
     const el = document.createElement("source");
     el.src = src;
     el.type = type;
     video.appendChild(el);
   }
   video.load();
+  return tier;
 }
 
 /**
@@ -115,6 +139,7 @@ function ensurePlaying(video) {
  * Set up the full-bleed hero video: adaptive sources, fade-in on `canplay`
  * (the poster shows via CSS until then), and resilient autoplay.
  * @param {HTMLVideoElement | null} video
+ * @returns {"poster" | 720 | 1080} the chosen media tier.
  */
 function initHeroVideo(video) {
   if (!video) {
@@ -122,7 +147,7 @@ function initHeroVideo(video) {
       // eslint-disable-next-line no-console
       console.warn("[glitch-portfolio] no [data-hero-video] element found");
     }
-    return;
+    return "poster";
   }
   // Cross-fade from poster to live video once the first frame is decodable.
   video.addEventListener(
@@ -130,8 +155,86 @@ function initHeroVideo(video) {
     () => video.classList.add("is-ready"),
     { once: true }
   );
-  attachSources(video);
-  ensurePlaying(video);
+  const tier = attachSources(video);
+  // Poster-only (slow / save-data): there is no video to start.
+  if (tier !== "poster") ensurePlaying(video);
+  return tier;
+}
+
+/**
+ * Centralized run/pause authority for battery + CPU. The hero animation should
+ * only run when it is BOTH on-screen and in the foreground tab, so this wires a
+ * single IntersectionObserver (offscreen) + `visibilitychange` (tab hidden) and,
+ * when either says "not visible", pauses the rAF loops (timeline + glitch) AND
+ * the `<video>` decode — resuming them together when both say "visible". This is
+ * the one authority for the run state, which is why timeline.js / glitch.js no
+ * longer carry their own visibility handlers (two would fight over it).
+ *
+ * @param {Object} opts
+ * @param {HTMLVideoElement | null} opts.video
+ * @param {Element | null} opts.stage  Element observed for on/offscreen.
+ * @param {{ pause: Function, resume: Function } | null} opts.glitch
+ * @param {{ start: Function, stop: Function }} opts.timeline
+ * @param {boolean} opts.videoActive  False when poster-only (no video to play).
+ * @returns {{ destroy: () => void }}
+ */
+function initPowerSaver({ video, stage, glitch, timeline, videoActive }) {
+  let onscreen = true;
+  let visible = typeof document !== "undefined" ? !document.hidden : true;
+  // Mirrors the initial running state: the timeline starts on creation, the
+  // glitch loop starts after its mask loads, and the video autoplays.
+  let running = true;
+
+  const playVideo = () => {
+    if (!video || !videoActive) return;
+    const result = video.play();
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  };
+
+  function apply() {
+    const shouldRun = onscreen && visible;
+    if (shouldRun === running) return;
+    running = shouldRun;
+    if (shouldRun) {
+      timeline.start();
+      if (glitch) glitch.resume();
+      playVideo();
+    } else {
+      timeline.stop();
+      if (glitch) glitch.pause();
+      if (video && videoActive) video.pause();
+    }
+  }
+
+  function onVisibility() {
+    visible = !document.hidden;
+    apply();
+  }
+  document.addEventListener("visibilitychange", onVisibility);
+
+  let observer = null;
+  if (stage && typeof IntersectionObserver === "function") {
+    observer = new IntersectionObserver(
+      (entries) => {
+        // One observed target; reflect its latest intersection.
+        for (const entry of entries) onscreen = entry.isIntersecting;
+        apply();
+      },
+      { threshold: 0 }
+    );
+    observer.observe(stage);
+  }
+
+  // Reconcile once in case the page loaded already hidden (no visibilitychange
+  // would fire to pause it otherwise).
+  apply();
+
+  return {
+    destroy() {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (observer) observer.disconnect();
+    },
+  };
 }
 
 /**
@@ -164,7 +267,8 @@ function init() {
   // an uncaught module error.
   try {
     const video = document.querySelector("[data-hero-video]");
-    initHeroVideo(video);
+    const tier = initHeroVideo(video);
+    const posterOnly = tier === "poster";
 
     const root = document.querySelector("[data-scroll-root]");
     const timeline = createTimeline({ root });
@@ -172,9 +276,13 @@ function init() {
     // WebGL sky-glitch hero: renders the playing video through the masked glitch
     // shader, driven by this same timeline. Returns null (and leaves the plain
     // <video> as the hero) when WebGL/the mask is unavailable or reduced-motion
-    // is set — so this line never breaks the baseline experience.
+    // is set — so this line never breaks the baseline experience. Skipped
+    // entirely on the poster-only tier: with no video frames to sample, spinning
+    // a GL loop would only waste battery on the constrained connection.
     const glitchCanvas = document.querySelector("[data-glitch-canvas]");
-    const glitch = initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
+    const glitch = posterOnly
+      ? null
+      : initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
 
     // Scroll narrative: reveals the title, fades it, then reveals the outro
     // Contact/Projects links — all timed off the same timeline so the text stays
@@ -182,10 +290,22 @@ function init() {
     // title/links visible) if the markup hooks are absent.
     const scenes = initScenes({ timeline, debug: DEBUG });
 
+    // Single battery/CPU authority: pauses the rAF loops + video when the hero
+    // is offscreen or the tab is hidden, and resumes them together. timeline.js
+    // and glitch.js delegate their visibility handling to this.
+    const stage = document.querySelector(".stage");
+    const power = initPowerSaver({
+      video,
+      stage,
+      glitch,
+      timeline,
+      videoActive: !posterOnly,
+    });
+
     // Expose the single timeline + controllers so downstream modules (the
     // hardening pass) subscribe to the same clock and can dial things instead of
     // making their own.
-    window.glitchPortfolio = { timeline, glitch, scenes };
+    window.glitchPortfolio = { timeline, glitch, scenes, power, tier };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";
