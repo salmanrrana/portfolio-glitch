@@ -29,3 +29,7 @@ plans/ralph*.sh
 .claude/review-runs/
 .ralph-prompt.md
 .ralph-services.json
+
+# Python bytecode cache
+__pycache__/
+*.pyc

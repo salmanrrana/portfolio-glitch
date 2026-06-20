@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sky-mask verification harness</title>
+    <!--
+      Throwaway DEV-ONLY harness for the sky-mask ticket. NOT part of the
+      production site (index.html). Serve the repo root and open:
+          http://localhost:8000/assets-src/verify-sky-mask.html
+
+      It overlays public/assets/sky-mask.png on the live hero video using the
+      SAME object-fit: cover mapping the WebGL shader will use (see coverRect()
+      and assets-src/sky-mask-notes.md), so it proves two things at once:
+        1. the mask boundary hugs the sky only — zero bleed onto trees/hills/horses
+        2. the mask stays locked to the video under cover-fit at any aspect ratio
+      Use the aspect buttons to confirm portrait/landscape/ultrawide all track.
+    -->
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #05060a;
+        color: #e8ecf4;
+        font: 13px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+      }
+      h1 { font-size: 14px; margin: 4px 0 0; letter-spacing: 0.04em; }
+      .stage {
+        position: relative;
+        background: #000;
+        border: 1px solid #222a3a;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+      }
+      canvas { display: block; }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        max-width: 900px;
+        justify-content: center;
+      }
+      .controls label { display: inline-flex; align-items: center; gap: 6px; }
+      button, select {
+        background: #121826;
+        color: #e8ecf4;
+        border: 1px solid #2a3346;
+        border-radius: 6px;
+        padding: 5px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button.active { background: #1f6feb; border-color: #1f6feb; }
+      .hint { opacity: 0.6; max-width: 760px; text-align: center; }
+      .err { color: #ff6b6b; max-width: 760px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <h1>SKY-MASK VERIFICATION — red = glitchable sky · everything else is protected</h1>
+
+    <div class="stage" id="stage">
+      <canvas id="c"></canvas>
+    </div>
+
+    <div class="controls">
+      <label>mode
+        <select id="mode">
+          <option value="tint">Red-tint sky (bleed check)</option>
+          <option value="punch">Punch-through (sky only)</option>
+          <option value="mask">Raw mask (grayscale)</option>
+          <option value="video">Video only</option>
+        </select>
+      </label>
+      <label>overlay
+        <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.5" />
+      </label>
+      <label>aspect
+        <span id="aspectBtns"></span>
+      </label>
+      <button id="playPause">Pause</button>
+    </div>
+
+    <p class="hint">
+      The red tint must cover the sky/clouds and stop exactly at the tree/hill
+      canopy — if any red touches a tree, hill, or horse, the mask bleeds. Switch
+      aspects to confirm the boundary stays locked to the video under cover-fit.
+    </p>
+    <p class="err" id="err" hidden></p>
+
+    <script type="module">
+      const ROOT = "/public/assets/";
+      const VIDEO_SRC = ROOT + "hero-1080.mp4";
+      const MASK_SRC = ROOT + "sky-mask.png";
+
+      const stage = document.getElementById("stage");
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d");
+      const errEl = document.getElementById("err");
+
+      function fail(msg) {
+        errEl.hidden = false;
+        errEl.textContent = msg;
+      }
+
+      // --- media ---------------------------------------------------------------
+      const video = document.createElement("video");
+      video.src = VIDEO_SRC;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.autoplay = true;
+      video.addEventListener("error", () =>
+        fail(`Could not load ${VIDEO_SRC} — run scripts/encode-video.sh first.`)
+      );
+      video.play().catch(() => {/* will retry via rAF once buffered */});
+
+      const mask = new Image();
+      mask.src = MASK_SRC;
+      mask.addEventListener("error", () =>
+        fail(`Could not load ${MASK_SRC} — run assets-src/make-sky-mask.py first.`)
+      );
+
+      // Offscreen used to colour the mask (red where sky) before compositing.
+      const off = document.createElement("canvas");
+      const offCtx = off.getContext("2d");
+
+      // --- sizing: pick a viewport aspect to exercise cover-fit ----------------
+      const ASPECTS = [
+        ["16:9", 16 / 9],
+        ["9:16", 9 / 16],
+        ["1:1", 1],
+        ["21:9", 21 / 9],
+        ["4:3", 4 / 3],
+      ];
+      let viewAspect = 16 / 9;
+
+      function resize() {
+        const maxW = Math.min(window.innerWidth - 32, 1100);
+        const maxH = Math.min(window.innerHeight - 200, 700);
+        let w = maxW;
+        let h = w / viewAspect;
+        if (h > maxH) { h = maxH; w = h * viewAspect; }
+        canvas.width = Math.round(w);
+        canvas.height = Math.round(h);
+        off.width = canvas.width;
+        off.height = canvas.height;
+      }
+      window.addEventListener("resize", resize);
+
+      const aspectBtns = document.getElementById("aspectBtns");
+      ASPECTS.forEach(([label, ratio], i) => {
+        const b = document.createElement("button");
+        b.textContent = label;
+        if (i === 0) b.classList.add("active");
+        b.addEventListener("click", () => {
+          viewAspect = ratio;
+          aspectBtns.querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          resize();
+        });
+        aspectBtns.appendChild(b);
+      });
+      resize();
+
+      // --- THE cover-fit mapping (mirrors the shader UV math in the notes) ------
+      // Returns drawImage(dx,dy,dW,dH) that scales src to COVER dst, centred,
+      // cropping the overflow axis — identical scaling for video AND mask, so
+      // they stay pixel-aligned at every viewport aspect ratio.
+      function coverRect(srcW, srcH, dstW, dstH) {
+        const scale = Math.max(dstW / srcW, dstH / srcH);
+        const dW = srcW * scale;
+        const dH = srcH * scale;
+        return [(dstW - dW) / 2, (dstH - dH) / 2, dW, dH];
+      }
+
+      let playing = true;
+      const playPause = document.getElementById("playPause");
+      playPause.addEventListener("click", () => {
+        playing = !playing;
+        if (playing) video.play(); else video.pause();
+        playPause.textContent = playing ? "Pause" : "Play";
+      });
+
+      const modeEl = document.getElementById("mode");
+      const opacityEl = document.getElementById("opacity");
+
+      function frame() {
+        const { width: W, height: H } = canvas;
+        const mode = modeEl.value;
+        const overlay = parseFloat(opacityEl.value);
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Same cover rect for both textures (video natural size = mask size).
+        const vr = video.videoWidth
+          ? coverRect(video.videoWidth, video.videoHeight, W, H)
+          : null;
+        const mr = coverRect(mask.naturalWidth || 1920, mask.naturalHeight || 1080, W, H);
+
+        if (mode === "mask") {
+          ctx.drawImage(mask, ...mr);
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        if (vr) ctx.drawImage(video, ...vr);
+
+        if (mode === "video") {
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        if (mode === "punch") {
+          // Show the video ONLY through the sky (mask=white); black out the
+          // protected foreground — a stark read of exactly what glitches.
+          offCtx.clearRect(0, 0, W, H);
+          if (vr) offCtx.drawImage(video, ...vr);
+          offCtx.globalCompositeOperation = "destination-in";
+          offCtx.drawImage(mask, ...mr);
+          offCtx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, W, H);
+          ctx.drawImage(off, 0, 0);
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        // mode === "tint": red where the mask says sky, alpha = overlay.
+        offCtx.clearRect(0, 0, W, H);
+        offCtx.drawImage(mask, ...mr);
+        offCtx.globalCompositeOperation = "source-in";
+        offCtx.fillStyle = "#ff0033";
+        offCtx.fillRect(0, 0, W, H);
+        offCtx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = overlay;
+        ctx.drawImage(off, 0, 0);
+        ctx.globalAlpha = 1;
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>

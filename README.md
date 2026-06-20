@@ -23,6 +23,10 @@ src/
 public/assets/          # encoded video, poster, sky-mask (committed); raw .MOV is NOT
 scripts/
   encode-video.sh       # transcode the raw hero .MOV → web-optimized assets
+assets-src/
+  make-sky-mask.py      # derive public/assets/sky-mask.png from the encoded video
+  sky-mask-notes.md     # horizon analysis + shader UV mapping for the mask
+  verify-sky-mask.html  # dev-only in-browser harness to check the mask (not shipped)
 netlify.toml            # publish dir + cache headers (no build step)
 ```
 
@@ -61,6 +65,37 @@ shrinks the cloud drift at the loop seam (the foreground stays continuous).
 All MP4s carry `+faststart` (moov atom up front) so playback begins before the
 full download; the poster is the video's first frame so the poster→video handoff
 shows no jump.
+
+## Sky mask
+
+The glitch must hit the **sky only** — never the field, hills, or horses. The
+camera is a locked, static shot, so the sky boundary is baked once into a
+grayscale mask the WebGL shader samples to gate the effect:
+
+`public/assets/sky-mask.png` — 1920×1080 (1:1 with the video), **white = sky →
+glitch allowed**, **black = foreground → protected**, feathered edge.
+
+It is generated deterministically from the encoded video (so it stays aligned
+after any re-encode):
+
+```sh
+python3 assets-src/make-sky-mask.py   # needs numpy, Pillow, ffmpeg
+```
+
+The script samples frames across the loop, traces the **highest** tree/hill
+canopy per column across all of them, lifts the opaque region a safety margin
+above that canopy, and feathers — so it under-glitches a sliver of true sky
+rather than ever bleeding onto the foreground. Full footage analysis, the
+zero-bleed rationale, and the **`object-fit: cover` UV mapping the shader must
+use** are in [`assets-src/sky-mask-notes.md`](assets-src/sky-mask-notes.md).
+
+**Verify:** `assets-src/sky-mask-overlay.jpg` is committed evidence (glitchable
+sky tinted red, boundary in green — touches no tree/hill/horse). For a live
+check, serve the repo and open
+`http://localhost:8000/assets-src/verify-sky-mask.html` — it overlays the mask
+on the playing video using that same cover-fit mapping; switch aspect ratios to
+confirm the boundary stays locked. (The harness is dev-only and not part of the
+shipped site.)
 
 ## Run locally
 
