@@ -4,7 +4,6 @@
 
 [build]
   publish = "."
-  # no build command needed for the static site itself
 
 # Default: never cache HTML/JS/CSS so "git push -> live" updates show instantly.
 [[headers]]
