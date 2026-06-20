@@ -7,7 +7,7 @@
 // choreography (scenes.js) onto the same timeline created here.
 // ============================================================================
 
-import { createTimeline, sceneProgress } from "./timeline.js";
+import { createTimeline } from "./timeline.js";
 
 // Guard the location read so importing this module outside a browser
 // (test runner / SSR) doesn't blow up with an opaque module-load error.
@@ -76,7 +76,12 @@ function ensurePlaying(video) {
       result.catch(() => {
         // Autoplay was blocked. Wait for any user gesture, then play once.
         const resume = () => {
-          video.play().catch(() => {});
+          video.play().catch((retryErr) => {
+            if (DEBUG) {
+              // eslint-disable-next-line no-console
+              console.warn("[glitch-portfolio] hero autoplay retry failed", retryErr);
+            }
+          });
           window.removeEventListener("pointerdown", resume);
           window.removeEventListener("touchstart", resume);
           window.removeEventListener("keydown", resume);
@@ -101,7 +106,13 @@ function ensurePlaying(video) {
  * @param {HTMLVideoElement | null} video
  */
 function initHeroVideo(video) {
-  if (!video) return;
+  if (!video) {
+    if (DEBUG) {
+      // eslint-disable-next-line no-console
+      console.warn("[glitch-portfolio] no [data-hero-video] element found");
+    }
+    return;
+  }
   // Cross-fade from poster to live video once the first frame is decodable.
   video.addEventListener(
     "canplay",
@@ -126,13 +137,12 @@ function mountDebugOverlay(timeline) {
   document.body.appendChild(overlay);
 
   timeline.subscribe((progress, state) => {
-    const local = sceneProgress(state.scene, progress);
     overlay.textContent = [
       `progress : ${progress.toFixed(3)}`,
       `raw      : ${state.raw.toFixed(3)}`,
       `velocity : ${state.velocity >= 0 ? "+" : ""}${state.velocity.toFixed(4)}`,
       `scene    : ${state.scene}`,
-      `scene %  : ${local.toFixed(3)}`,
+      `scene %  : ${state.sceneProgress.toFixed(3)}`,
     ].join("\n");
   });
 }
