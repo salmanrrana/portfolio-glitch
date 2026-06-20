@@ -53,7 +53,14 @@ void main() {
 // from subtle to full corruption with u_intensity. Everything is gated by the
 // sky mask so the foreground is always the untouched clean video.
 const FRAG_SRC = `
+// High float precision is optional for fragment shaders in WebGL1; falling back
+// to mediump where it's unavailable keeps the effect working on low-end GPUs
+// (all UVs are 0..1, so mediump is plenty) instead of failing to compile.
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
 
 varying vec2 v_uv;
 
@@ -384,15 +391,14 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     }
   }
 
-  function updateIntensity() {
+  function updateIntensity(tSec) {
     const base = sceneBaseIntensity(state.scene, state.sceneProgress);
     // Scroll-velocity surge: fast scrolling kicks the glitch harder, so it feels
     // reactive rather than purely positional.
     const surge = Math.min(0.35, Math.abs(state.velocity) * 28);
     // Time-based flicker, scaled by base so a clean sky never shimmers.
-    const t = (startTime ? (nowMs() - startTime) : 0) / 1000;
     const flicker =
-      (Math.sin(t * 7.0) * 0.5 + Math.sin(t * 13.0 + 1.3) * 0.3) * 0.08 * base;
+      (Math.sin(tSec * 7.0) * 0.5 + Math.sin(tSec * 13.0 + 1.3) * 0.3) * 0.08 * base;
     const target = clamp01((base + surge + flicker) * intensityScale);
     // Smooth toward the target so scene boundaries don't snap.
     intensity += (target - intensity) * 0.15;
@@ -404,19 +410,14 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     parallaxX += (0 - parallaxX) * 0.1;
   }
 
-  // Date.now() in the renderer is only used to advance shader time / flicker; it
-  // never affects layout, so it's safe (and avoids depending on the rAF arg
-  // which the test/headless path may not provide).
-  function nowMs() {
-    return Date.now();
-  }
-
-  function draw() {
+  // draw is always invoked as a requestAnimationFrame callback, so the browser
+  // hands us a monotonic DOMHighResTimeStamp (tsMs) — we use that for the shader
+  // clock rather than Date.now(), which can jump on NTP/sleep.
+  function draw(tsMs) {
     if (!running) return;
     raf = window.requestAnimationFrame(draw);
 
     resize();
-    updateIntensity();
 
     // Upload the current video frame. Guard until the video actually has pixels;
     // before that the poster (CSS background) is what the user sees.
@@ -437,10 +438,14 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
         // First good frame: reveal the canvas (CSS cross-fades it in over the
         // already-playing video / poster) and start the shader clock.
         active = true;
-        startTime = nowMs();
+        startTime = tsMs;
         canvas.classList.add("is-ready");
       }
     }
+
+    // Shader time measured from the first active frame (0 until then).
+    const tSec = startTime ? (tsMs - startTime) / 1000 : 0;
+    updateIntensity(tSec);
 
     if (!active || !maskTex) return; // nothing meaningful to render yet
 
@@ -459,7 +464,7 @@ export function initGlitch({ video, canvas, timeline, debug = false } = {}) {
     gl.bindTexture(gl.TEXTURE_2D, maskTex);
     gl.uniform1i(u.mask, 1);
 
-    gl.uniform1f(u.time, (nowMs() - startTime) / 1000);
+    gl.uniform1f(u.time, tSec);
     gl.uniform1f(u.intensity, intensity);
     gl.uniform2f(u.parallax, parallaxX, parallaxY);
     gl.uniform2f(u.resolution, canvas.width, canvas.height);
