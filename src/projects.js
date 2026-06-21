@@ -29,6 +29,17 @@ const PROJECTS = [
     repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
   },
   {
+    id: "openscapes",
+    title: "OpenScapes",
+    kind: "Browser art installation",
+    description: "A static Web Audio and canvas installation that turns browser signals, pointer motion, timing drift, and optional room light into an ambient soundscape and cosmic field.",
+    tags: ["Web Audio", "Canvas", "Signals"],
+    accent: "#2878ff",
+    liveUrl: "https://openscapes.netlify.app/",
+    previewUrl: "https://openscapes.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/openscapes",
+  },
+  {
     id: "update-clankers",
     title: "Update Clankers",
     kind: "Provider skill",

@@ -632,6 +632,7 @@ body {
 .project-space.is-arriving .project-row:nth-child(5) { animation-delay: 180ms; }
 .project-space.is-arriving .project-row:nth-child(6) { animation-delay: 225ms; }
 .project-space.is-arriving .project-row:nth-child(7) { animation-delay: 270ms; }
+.project-space.is-arriving .project-row:nth-child(8) { animation-delay: 315ms; }
 
 .project-space.is-viewing .project-index {
   opacity: 1;
