@@ -36,7 +36,6 @@ const PROJECTS = [
     tags: ["Web Audio", "Canvas", "Signals"],
     accent: "#2878ff",
     liveUrl: "https://openscapes.netlify.app/",
-    previewUrl: "https://openscapes.netlify.app/",
     repoUrl: "https://github.com/salmanrrana/openscapes",
   },
   {
