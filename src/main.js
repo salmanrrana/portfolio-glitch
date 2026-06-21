@@ -285,7 +285,7 @@ function init() {
     const posterOnly = tier === "poster";
 
     const root = document.querySelector("[data-scroll-root]");
-    timeline = createTimeline({ root });
+    timeline = createTimeline({ root, smoothing: 0.105 });
 
     // WebGL sky-glitch hero: renders the playing video through the masked glitch
     // shader, driven by this same timeline. Returns null (and leaves the plain

@@ -1,67 +1,84 @@
 // ============================================================================
-// projects.js - project dimension + iframe preview controller
+// projects.js - project dimension + inline preview controller
 //
 // The Projects CTA is no longer a plain jump. With JS, it opens a fixed project
-// layer through a slow white flash, renders six temporary project bays, runs a
-// lightweight pointer-reactive glitch net behind them, and previews a selected
-// bay inside an iframe dialog. Without JS, #projects remains a normal anchor.
+// layer through a slow white flash, renders the project index, runs a lightweight
+// pointer-reactive glitch net behind it, and previews a selected project in an
+// inline iframe plane. Without JS, #projects remains a normal anchor.
 // ============================================================================
 
 const PROJECTS = [
   {
-    id: "bay-01",
-    title: "Project Bay 01",
-    kind: "Full-stack build",
-    description: "Reserved for a live app with a playable preview, source link, and stack notes.",
-    tags: ["App", "API", "Live"],
-    accent: "#5ef2d6",
+    id: "brain-dump",
+    title: "Brain Dump",
+    kind: "AI work OS",
+    description: "Ticketing, context, telemetry, review flow, and project memory for agent-driven software work.",
+    tags: ["Agents", "MCP", "Telemetry"],
+    accent: "#008096",
+    repoUrl: "https://github.com/salmanrrana/brain-dump",
   },
   {
-    id: "bay-02",
-    title: "Project Bay 02",
-    kind: "Automation system",
-    description: "Reserved for agent workflows, integrations, or background jobs worth showing in motion.",
-    tags: ["Agents", "Queues", "Ops"],
-    accent: "#ff4f9a",
+    id: "maa-faa-notes",
+    title: "Maa-Faa Notes",
+    kind: "Notes API",
+    description: "A notes system built around daily capture, shared context, and agent contributions.",
+    tags: ["Notes", "API", "Memory"],
+    accent: "#d20060",
+    liveUrl: "https://maa-faa-notes.lakebed.app/",
+    previewUrl: "https://maa-faa-notes.lakebed.app/",
+    repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
   },
   {
-    id: "bay-03",
-    title: "Project Bay 03",
-    kind: "Interface experiment",
-    description: "Reserved for an interactive UI, canvas piece, game, or visual tool people can try here.",
-    tags: ["UI", "Motion", "Canvas"],
-    accent: "#f5d94f",
+    id: "openbeats",
+    title: "OpenBeats",
+    kind: "Music interface",
+    description: "A music-focused web project for exploring playback, browsing, and expressive UI states.",
+    tags: ["Audio", "UI", "Web"],
+    accent: "#f0b900",
+    liveUrl: "https://openb3ats.netlify.app/",
+    previewUrl: "https://openb3ats.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/openbeats",
   },
   {
-    id: "bay-04",
-    title: "Project Bay 04",
-    kind: "Data product",
-    description: "Reserved for dashboards, maps, search surfaces, or anything with a real information model.",
-    tags: ["Data", "Search", "Maps"],
-    accent: "#69ff8f",
+    id: "8-bit-satoshi",
+    title: "8-bit Satoshi",
+    kind: "Retro web experiment",
+    description: "A pixel-flavored Bitcoin project where the interface leans into arcade energy and motion.",
+    tags: ["Game", "Bitcoin", "Canvas"],
+    accent: "#12a357",
+    liveUrl: "https://eight-bit-satoshi.netlify.app/",
+    previewUrl: "https://eight-bit-satoshi.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/8-bit-satoshi",
   },
   {
-    id: "bay-05",
-    title: "Project Bay 05",
-    kind: "Infrastructure",
-    description: "Reserved for platform work, deployment systems, observability, or developer tooling.",
-    tags: ["Infra", "DX", "Cloud"],
-    accent: "#a987ff",
+    id: "scriptbook",
+    title: "Scriptbook",
+    kind: "Course build",
+    description: "A notebook-style JavaScript runtime built while following Stephen Grider's course and digging into bundling, transpilation, and execution flow.",
+    tags: ["React", "Bundling", "Learning"],
+    accent: "#5d5fea",
+    repoUrl: "https://github.com/salmanrrana/scriptbook",
   },
   {
-    id: "bay-06",
-    title: "Project Bay 06",
-    kind: "Wild card",
-    description: "Reserved for the project that does not fit the other bays but deserves the strangest room.",
-    tags: ["Prototype", "Research", "Weird"],
-    accent: "#ff8f5e",
+    id: "kids-meal",
+    title: "Kids-Meal",
+    kind: "Family utility",
+    description: "A practical app concept shaped around food choices, small decisions, and parent-friendly speed.",
+    tags: ["Product", "UX", "Utility"],
+    accent: "#eb6f38",
+    liveUrl: "https://kids-meal.netlify.app/",
+    previewUrl: "https://kids-meal.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/kids-meal",
   },
 ];
 
 const GITHUB_URL = "https://github.com/salmanrrana";
 const FLASH_MS = 1400;
 const FLASH_OPEN_AT_MS = 620;
-const CLOSE_MS = 540;
+const PREVIEW_FRAME_DELAY_MS = 240;
+const PREVIEW_SWAP_MS = 220;
+const PREVIEW_LOAD_TIMEOUT_MS = 10000;
+const PROJECT_LAYOUT_MS = 860;
 const NET_MAX_DPR = 1.35;
 const NET_SPACING = 74;
 const NET_TRAIL_LIMIT = 10;
@@ -80,6 +97,7 @@ const escapeHtml = (value) =>
 
 function renderPreviewDoc(project) {
   const tags = project.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("");
+  const repo = escapeHtml(project.repoUrl || GITHUB_URL);
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -87,44 +105,64 @@ function renderPreviewDoc(project) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root {
-        color-scheme: dark;
+        color-scheme: light;
         font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
-        background: #05060a;
-        color: #f4f6fb;
+        background: #ffffff;
+        color: #05060a;
+        --accent: ${project.accent};
       }
       * { box-sizing: border-box; }
       body {
         min-height: 100vh;
         margin: 0;
-        display: grid;
-        place-items: center;
         overflow: hidden;
         background:
-          radial-gradient(circle at 20% 28%, ${project.accent}33 0 1px, transparent 2px),
-          radial-gradient(circle at 82% 62%, #ff4f9a33 0 1px, transparent 2px),
-          conic-gradient(from 180deg at 50% 50%, #05060a, #101832, #05060a, #1b1022, #05060a);
+          linear-gradient(90deg, rgba(5, 6, 10, 0.045) 1px, transparent 1px),
+          linear-gradient(180deg, rgba(5, 6, 10, 0.045) 1px, transparent 1px),
+          radial-gradient(circle at 20% 22%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 26rem),
+          #ffffff;
+        background-size: 54px 54px, 54px 54px, auto, auto;
       }
       main {
-        width: min(720px, calc(100% - 2rem));
-        padding: 4rem;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        padding: clamp(1.2rem, 4vw, 4rem);
       }
       p, h1 { margin: 0; }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 0.42rem;
+        color: rgba(5, 6, 10, 0.54);
+        font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .dot {
+        width: 0.62rem;
+        height: 0.62rem;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+      .hero {
+        align-self: center;
+        width: min(760px, 100%);
+      }
       .kind {
-        margin-bottom: 0.8rem;
-        color: ${project.accent};
+        margin-bottom: 1rem;
+        color: color-mix(in srgb, var(--accent) 72%, #05060a);
         font: 0.82rem ui-monospace, SFMono-Regular, Menlo, monospace;
       }
       h1 {
-        font-size: 5.5rem;
+        font-size: clamp(3rem, 12vw, 7rem);
         line-height: 0.95;
         letter-spacing: 0;
         text-wrap: balance;
       }
       .desc {
-        max-width: 38rem;
-        margin-top: 1rem;
-        color: rgba(244, 246, 251, 0.76);
-        font-size: 1.1rem;
+        max-width: 44rem;
+        margin-top: 1.1rem;
+        color: rgba(5, 6, 10, 0.74);
+        font-size: clamp(1rem, 2.2vw, 1.22rem);
         line-height: 1.55;
       }
       .tags {
@@ -135,29 +173,44 @@ function renderPreviewDoc(project) {
       }
       .tags span {
         padding: 0.35rem 0.58rem;
-        border: 1px solid rgba(244, 246, 251, 0.22);
+        border: 1px solid rgba(5, 6, 10, 0.2);
         border-radius: 999px;
-        color: rgba(244, 246, 251, 0.8);
+        color: rgba(5, 6, 10, 0.72);
         font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace;
       }
+      .repo {
+        align-self: end;
+        color: rgba(5, 6, 10, 0.55);
+        font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       @media (max-width: 640px) {
-        main { padding: 1.5rem; }
-        h1 { font-size: 3rem; }
+        body { overflow: auto; }
+        main { min-height: 100vh; }
       }
     </style>
   </head>
   <body>
     <main>
-      <p class="kind">${escapeHtml(project.kind)}</p>
-      <h1>${escapeHtml(project.title)}</h1>
-      <p class="desc">${escapeHtml(project.description)}</p>
-      <div class="tags">${tags}</div>
+      <div class="bar" aria-hidden="true">
+        <span class="dot"></span>
+        <span>inline project preview</span>
+      </div>
+      <section class="hero" aria-label="${escapeHtml(project.title)} preview summary">
+        <p class="kind">${escapeHtml(project.kind)}</p>
+        <h1>${escapeHtml(project.title)}</h1>
+        <p class="desc">${escapeHtml(project.description)}</p>
+        <div class="tags">${tags}</div>
+      </section>
+      <p class="repo">${repo}</p>
     </main>
   </body>
 </html>`;
 }
 
-function renderCards(grid) {
+function renderProjectRows(grid) {
   const frag = document.createDocumentFragment();
   PROJECTS.forEach((project, index) => {
     const button = document.createElement("button");
@@ -176,14 +229,14 @@ function renderCards(grid) {
       <span class="project-row__tags" aria-label="${escapeHtml(project.title)} tags">
         ${project.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
       </span>
-      <span class="project-row__action">Preview</span>
+      <span class="project-row__action">Inspect</span>
     `;
     frag.appendChild(button);
   });
   grid.replaceChildren(frag);
 }
 
-function focusFirstCard(grid) {
+function focusFirstRow(grid) {
   const first = grid.querySelector(".project-row");
   if (first) first.focus({ preventScroll: true });
 }
@@ -349,17 +402,19 @@ function initGlitchNet(canvas) {
 export function initProjects({ root = document, debug = false } = {}) {
   const section = root.querySelector("[data-project-space]");
   const grid = root.querySelector("[data-project-grid]");
-  const viewer = root.querySelector("[data-project-viewer]");
-  const frame = root.querySelector("[data-project-viewer-frame]");
-  const viewerTitle = root.querySelector("[data-project-viewer-title]");
-  const viewerKind = root.querySelector("[data-project-viewer-kind]");
-  const viewerOpen = root.querySelector("[data-project-viewer-open]");
-  const viewerClose = root.querySelector("[data-project-viewer-close]");
+  const preview = root.querySelector("[data-project-preview]");
+  const frame = root.querySelector("[data-project-preview-frame]");
+  const previewTitle = root.querySelector("[data-project-preview-title]");
+  const previewKind = root.querySelector("[data-project-preview-kind]");
+  const previewDescription = root.querySelector("[data-project-preview-description]");
+  const previewOpen = root.querySelector("[data-project-preview-open]");
+  const previewClose = root.querySelector("[data-project-preview-close]");
+  const previewLoader = root.querySelector("[data-project-preview-loader]");
   const projectClose = root.querySelector("[data-project-space-close]");
   const netCanvas = root.querySelector("[data-project-glitch-net]");
   const projectLinks = Array.from(root.querySelectorAll('a[href="#projects"]'));
 
-  if (!section || !grid || !viewer || !frame) {
+  if (!section || !grid || !preview || !frame) {
     if (debug) {
       // eslint-disable-next-line no-console
       console.warn("[projects] missing project dimension markup");
@@ -367,24 +422,28 @@ export function initProjects({ root = document, debug = false } = {}) {
     return null;
   }
 
-  renderCards(grid);
+  renderProjectRows(grid);
   section.setAttribute("aria-hidden", "true");
+  preview.setAttribute("aria-hidden", "true");
+  preview.inert = true;
 
   const net = initGlitchNet(netCanvas);
   let flashTimer = 0;
   let flashCleanupTimer = 0;
-  let openTimer = 0;
+  let frameLoadTimer = 0;
+  let swapTimer = 0;
+  let loadFallbackTimer = 0;
   let closeTimer = 0;
   let projectsOpen = false;
-  let activeCard = null;
+  let activeRow = null;
 
   function enterProjects(event) {
     if (event) event.preventDefault();
     window.clearTimeout(flashTimer);
     window.clearTimeout(flashCleanupTimer);
-    const shouldFocusCard = !event || (event.detail === 0 && event.isTrusted);
+    const shouldFocusRow = !event || (event.detail === 0 && event.isTrusted);
     if (projectsOpen) {
-      if (shouldFocusCard) focusFirstCard(grid);
+      if (shouldFocusRow) focusFirstRow(grid);
       return;
     }
 
@@ -393,7 +452,7 @@ export function initProjects({ root = document, debug = false } = {}) {
       section.setAttribute("aria-hidden", "false");
       document.documentElement.classList.add("is-projects-open");
       net.start();
-      if (shouldFocusCard) focusFirstCard(grid);
+      if (shouldFocusRow) focusFirstRow(grid);
       return;
     }
 
@@ -405,7 +464,7 @@ export function initProjects({ root = document, debug = false } = {}) {
       section.setAttribute("aria-hidden", "false");
       document.documentElement.classList.add("is-projects-open");
       net.start();
-      if (shouldFocusCard) focusFirstCard(grid);
+      if (shouldFocusRow) focusFirstRow(grid);
     }, FLASH_OPEN_AT_MS);
 
     flashCleanupTimer = window.setTimeout(() => {
@@ -416,7 +475,7 @@ export function initProjects({ root = document, debug = false } = {}) {
 
   function closeProjects() {
     if (!projectsOpen) return;
-    if (viewer.open) {
+    if (activeRow) {
       closeProject();
       return;
     }
@@ -444,66 +503,120 @@ export function initProjects({ root = document, debug = false } = {}) {
     }, FLASH_MS);
   }
 
-  function clearActiveCard() {
-    if (activeCard) activeCard.classList.remove("is-active");
+  function clearActiveRow() {
+    if (activeRow) activeRow.classList.remove("is-active");
   }
 
-  function openProject(project, card) {
-    window.clearTimeout(openTimer);
-    window.clearTimeout(closeTimer);
-    clearActiveCard();
-    activeCard = card;
-    activeCard.classList.add("is-active");
+  function showFrameLoading() {
+    window.clearTimeout(loadFallbackTimer);
+    preview.classList.add("is-loading");
+    preview.setAttribute("aria-busy", "true");
+    if (previewLoader) previewLoader.setAttribute("aria-hidden", "false");
+    loadFallbackTimer = window.setTimeout(() => {
+      hideFrameLoading();
+    }, PREVIEW_LOAD_TIMEOUT_MS);
+  }
 
-    if (viewerTitle) viewerTitle.textContent = project.title;
-    if (viewerKind) viewerKind.textContent = project.kind;
-    if (viewerOpen) {
-      viewerOpen.href = project.sourceUrl || GITHUB_URL;
-      viewerOpen.textContent = project.sourceLabel || "Open GitHub";
+  function hideFrameLoading() {
+    window.clearTimeout(loadFallbackTimer);
+    preview.classList.remove("is-loading");
+    preview.setAttribute("aria-busy", "false");
+    if (previewLoader) previewLoader.setAttribute("aria-hidden", "true");
+  }
+
+  function applyProjectMeta(project) {
+    if (previewTitle) previewTitle.textContent = project.title;
+    if (previewKind) previewKind.textContent = project.kind;
+    if (previewDescription) previewDescription.textContent = project.description;
+    if (previewOpen) {
+      previewOpen.href = project.liveUrl || project.repoUrl || GITHUB_URL;
+      previewOpen.textContent = project.liveUrl ? "Open live site" : "Open repository";
     }
     frame.title = `${project.title} preview`;
-    frame.removeAttribute("src");
-    frame.srcdoc = renderPreviewDoc(project);
+  }
 
+  function loadProjectFrame(project) {
+    showFrameLoading();
+    if (project.previewUrl) {
+      frame.removeAttribute("srcdoc");
+      frame.src = project.previewUrl;
+    } else {
+      frame.removeAttribute("src");
+      frame.srcdoc = renderPreviewDoc(project);
+    }
+  }
+
+  function openProject(project, row) {
+    window.clearTimeout(frameLoadTimer);
+    window.clearTimeout(swapTimer);
+    window.clearTimeout(closeTimer);
+    const wasViewing = Boolean(activeRow);
+    const isSameRow = activeRow === row && section.classList.contains("is-viewing");
+    if (isSameRow) return;
+
+    clearActiveRow();
+    activeRow = row;
+    activeRow.classList.add("is-active");
+
+    preview.setAttribute("aria-hidden", "false");
+    preview.inert = false;
     section.classList.add("is-viewing");
-    document.documentElement.classList.add("project-modal-open");
+    preview.classList.remove("is-minimizing");
+    showFrameLoading();
 
-    if (!viewer.open) viewer.showModal();
-    viewer.classList.remove("is-minimizing");
-    viewer.classList.remove("is-open");
+    if (wasViewing) {
+      preview.classList.add("is-swapping");
+      swapTimer = window.setTimeout(() => {
+        applyProjectMeta(project);
+        preview.classList.remove("is-swapping");
+        frameLoadTimer = window.setTimeout(() => {
+          loadProjectFrame(project);
+        }, reduceMotion() ? 0 : 80);
+      }, reduceMotion() ? 0 : PREVIEW_SWAP_MS);
+      return;
+    }
 
-    openTimer = window.setTimeout(() => {
-      viewer.classList.add("is-open");
-    }, reduceMotion() ? 0 : 30);
+    applyProjectMeta(project);
+    preview.classList.add("is-open");
+
+    frameLoadTimer = window.setTimeout(() => {
+      loadProjectFrame(project);
+    }, reduceMotion() ? 0 : PREVIEW_FRAME_DELAY_MS);
   }
 
   function finishClose() {
-    viewer.classList.remove("is-open");
-    viewer.classList.remove("is-minimizing");
-    if (viewer.open) viewer.close();
+    preview.classList.remove("is-open");
+    preview.classList.remove("is-minimizing");
+    preview.classList.remove("is-swapping");
+    hideFrameLoading();
     frame.removeAttribute("src");
     frame.removeAttribute("srcdoc");
+    preview.setAttribute("aria-hidden", "true");
+    preview.inert = true;
     section.classList.remove("is-viewing");
-    document.documentElement.classList.remove("project-modal-open");
-    const returnFocus = activeCard;
-    clearActiveCard();
-    activeCard = null;
+    const returnFocus = activeRow;
+    clearActiveRow();
+    activeRow = null;
     if (returnFocus) returnFocus.focus({ preventScroll: true });
   }
 
   function closeProject() {
-    if (!viewer.open) return;
-    window.clearTimeout(openTimer);
+    if (!activeRow) return;
+    window.clearTimeout(frameLoadTimer);
+    window.clearTimeout(swapTimer);
     window.clearTimeout(closeTimer);
-    viewer.classList.remove("is-open");
+    window.clearTimeout(loadFallbackTimer);
+    preview.classList.remove("is-swapping");
+    preview.classList.remove("is-open");
+    preview.classList.add("is-minimizing");
+    section.classList.remove("is-viewing");
 
     if (reduceMotion()) {
       finishClose();
       return;
     }
 
-    viewer.classList.add("is-minimizing");
-    closeTimer = window.setTimeout(finishClose, CLOSE_MS);
+    closeTimer = window.setTimeout(finishClose, PROJECT_LAYOUT_MS);
   }
 
   function onGridClick(event) {
@@ -513,31 +626,16 @@ export function initProjects({ root = document, debug = false } = {}) {
     if (project) openProject(project, row);
   }
 
-  function onViewerClick(event) {
-    if (event.target !== viewer) return;
-    const rect = viewer.getBoundingClientRect();
-    const outside =
-      event.clientX < rect.left ||
-      event.clientX > rect.right ||
-      event.clientY < rect.top ||
-      event.clientY > rect.bottom;
-    if (outside) closeProject();
-  }
-
-  function onViewerCancel(event) {
-    event.preventDefault();
-    closeProject();
-  }
-
   function onPointerMove(event) {
     if (!projectsOpen) return;
     net.poke(event.clientX, event.clientY);
   }
 
   function onKeydown(event) {
-    if (event.key === "Escape" && projectsOpen && !viewer.open) {
+    if (event.key === "Escape" && projectsOpen) {
       event.preventDefault();
-      closeProjects();
+      if (activeRow) closeProject();
+      else closeProjects();
     }
   }
 
@@ -545,14 +643,17 @@ export function initProjects({ root = document, debug = false } = {}) {
     if (projectsOpen) net.resize();
   }
 
+  function onFrameLoad() {
+    hideFrameLoading();
+  }
+
   for (const link of projectLinks) {
     link.addEventListener("click", enterProjects);
   }
   grid.addEventListener("click", onGridClick);
   projectClose?.addEventListener("click", closeProjects);
-  viewerClose?.addEventListener("click", closeProject);
-  viewer.addEventListener("cancel", onViewerCancel);
-  viewer.addEventListener("click", onViewerClick);
+  previewClose?.addEventListener("click", closeProject);
+  frame.addEventListener("load", onFrameLoad);
   section.addEventListener("pointermove", onPointerMove);
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("resize", onResize);
@@ -566,7 +667,9 @@ export function initProjects({ root = document, debug = false } = {}) {
     destroy() {
       window.clearTimeout(flashTimer);
       window.clearTimeout(flashCleanupTimer);
-      window.clearTimeout(openTimer);
+      window.clearTimeout(frameLoadTimer);
+      window.clearTimeout(swapTimer);
+      window.clearTimeout(loadFallbackTimer);
       window.clearTimeout(closeTimer);
       net.stop();
       for (const link of projectLinks) {
@@ -574,13 +677,11 @@ export function initProjects({ root = document, debug = false } = {}) {
       }
       grid.removeEventListener("click", onGridClick);
       projectClose?.removeEventListener("click", closeProjects);
-      viewerClose?.removeEventListener("click", closeProject);
-      viewer.removeEventListener("cancel", onViewerCancel);
-      viewer.removeEventListener("click", onViewerClick);
+      previewClose?.removeEventListener("click", closeProject);
+      frame.removeEventListener("load", onFrameLoad);
       section.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("keydown", onKeydown);
       window.removeEventListener("resize", onResize);
-      if (viewer.open) viewer.close();
     },
   };
 }

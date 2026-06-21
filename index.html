@@ -157,31 +157,40 @@
           <h2 class="project-space__title" id="projects-title">Selected work index.</h2>
         </header>
 
-        <div class="project-index" data-project-grid aria-live="polite"></div>
+        <div class="project-layout" data-project-layout>
+          <div class="project-index" data-project-grid aria-live="polite"></div>
+
+          <aside class="project-preview" data-project-preview aria-hidden="true" aria-labelledby="project-preview-title">
+            <div class="project-preview__chrome">
+              <div class="project-preview__meta">
+                <p class="project-preview__kicker" data-project-preview-kind>Preview</p>
+                <h3 class="project-preview__title" id="project-preview-title" data-project-preview-title>Project</h3>
+                <p class="project-preview__description" data-project-preview-description></p>
+              </div>
+              <div class="project-preview__actions">
+                <a class="project-preview__open" data-project-preview-open href="https://github.com/salmanrrana" target="_blank" rel="noreferrer">Open repository</a>
+                <button class="project-preview__close" type="button" data-project-preview-close aria-label="Close project preview">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            </div>
+            <div class="project-preview__stage">
+              <div class="project-preview__loader" data-project-preview-loader role="status" aria-live="polite">
+                <span class="project-preview__spinner" aria-hidden="true"></span>
+                <span>Loading preview</span>
+              </div>
+              <iframe
+                class="project-preview__frame"
+                data-project-preview-frame
+                title="Project preview"
+                loading="eager"
+                sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts"
+              ></iframe>
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
-
-    <dialog class="project-viewer" data-project-viewer aria-labelledby="project-viewer-title">
-      <div class="project-viewer__chrome">
-        <div>
-          <p class="project-viewer__kicker" data-project-viewer-kind>Preview</p>
-          <h3 class="project-viewer__title" id="project-viewer-title" data-project-viewer-title>Project</h3>
-        </div>
-        <div class="project-viewer__actions">
-          <a class="project-viewer__open" data-project-viewer-open href="https://github.com/salmanrrana" target="_blank" rel="noreferrer">Open GitHub</a>
-          <button class="project-viewer__close" type="button" data-project-viewer-close aria-label="Close project preview">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-      </div>
-      <iframe
-        class="project-viewer__frame"
-        data-project-viewer-frame
-        title="Project preview"
-        loading="lazy"
-        sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-scripts"
-      ></iframe>
-    </dialog>
 
     <script type="module" src="src/main.js"></script>
   </body>

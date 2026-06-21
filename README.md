@@ -169,15 +169,16 @@ the glitch shader and drives the title and outro links per scene:
 `src/projects.js` owns the project area. The page does **not** scroll down into a
 separate projects section when JS is active; clicking Projects keeps the visitor
 on the video scroll position, flashes the screen white, then fades in a fixed
-overlay. Six temporary project bays are rendered from the `PROJECTS` array.
+overlay. The six project rows are rendered from the `PROJECTS` array.
 
-- Replace each `Project Bay` object with the real title, description, tags,
-  preview URL/source URL, and accent color.
+- Update each project object with the final description, tags, live preview URL,
+  repository URL, and accent color as those projects are ready.
 - The background glitch net is a capped-DPR canvas that only runs while the
   overlay is open. Pointer movement creates short decaying glitch trails behind
   the project index, so the projects themselves stay readable.
-- Each row opens the iframe viewer. `Open GitHub` currently points to
-  `https://github.com/salmanrrana` until real project URLs are added.
+- Each row compresses the index into a left rail and opens an inline white
+  preview plane. `Open repository` currently points at the matching
+  `salmanrrana` GitHub repo URL.
 
 #### Editing the outro links
 

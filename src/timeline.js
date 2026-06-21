@@ -38,12 +38,12 @@
 // hold and fade (titleReveal / titleHold / titleFade), and the closing links
 // (outro).
 export const SCENES = Object.freeze({
-  glitchInOut: [0.0, 0.32],
-  titleReveal: [0.32, 0.5],
-  titleHold: [0.5, 0.68],
-  titleFade: [0.68, 0.78],
-  glitchWave2: [0.78, 0.93],
-  outro: [0.93, 1.0],
+  glitchInOut: [0.0, 0.34],
+  titleReveal: [0.34, 0.54],
+  titleHold: [0.54, 0.7],
+  titleFade: [0.7, 0.81],
+  glitchWave2: [0.81, 0.91],
+  outro: [0.91, 1.0],
 });
 
 const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
