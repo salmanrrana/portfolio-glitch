@@ -43,6 +43,14 @@
     -->
     <script>
       document.documentElement.classList.add("js");
+      try {
+        if (window.sessionStorage.getItem("indexTransition") === "inbound") {
+          document.documentElement.classList.add("is-index-arriving");
+          window.sessionStorage.removeItem("indexTransition");
+        }
+      } catch (_) {
+        /* Direct visits still render normally. */
+      }
       window.__scrollNarrativeFallback = window.setTimeout(function () {
         document.documentElement.classList.remove("js");
       }, 3000);
@@ -64,7 +72,7 @@
     -->
     <a class="skip-link" href="#site-nav">Skip to contact &amp; projects</a>
     <nav class="site-nav" id="site-nav" aria-label="Quick links">
-      <a class="site-nav__link" href="mailto:mrhuman515@gmail.com">Contact</a>
+      <a class="site-nav__link" href="contact.html">Contact</a>
       <a class="site-nav__link" href="#projects">Projects</a>
     </nav>
 
@@ -131,13 +139,13 @@
           <!--
             Outro links. These are the only two calls-to-action in the splash.
             ┌─ EDIT HERE ────────────────────────────────────────────────────┐
-            │ Contact  → update the mailto: address below.                    │
+            │ Contact  → update the contact page URL below.                   │
             │ Projects → replace the "#projects" placeholder with the real    │
             │            projects URL (or keep it as an in-page anchor).      │
             └────────────────────────────────────────────────────────────────┘
           -->
           <nav class="outro" data-outro aria-label="Get in touch">
-            <a class="outro__link" href="mailto:mrhuman515@gmail.com">Contact</a>
+            <a class="outro__link" href="contact.html">Contact</a>
             <a class="outro__link" href="#projects">Projects</a>
           </nav>
         </div>
@@ -148,9 +156,16 @@
 
     <section class="project-space" id="projects" data-project-space aria-labelledby="projects-title">
       <canvas class="project-glitch-net" data-project-glitch-net aria-hidden="true"></canvas>
-      <button class="project-space__close" type="button" data-project-space-close aria-label="Close projects">
-        <span aria-hidden="true">&times;</span>
-      </button>
+      <header class="project-topbar" aria-label="Projects navigation">
+        <button class="project-wordmark" type="button" data-project-home aria-label="Return to portfolio home">
+          <span>Salman R Rana</span>
+          <span>home</span>
+        </button>
+        <nav class="project-nav" aria-label="Project page links">
+          <button type="button" data-project-home>Home</button>
+          <a href="contact.html">Contact</a>
+        </nav>
+      </header>
 
       <div class="project-space__inner">
         <header class="project-space__header">

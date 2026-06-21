@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Salman R Rana, software engineer and engineering manager building AI workflow systems for real software delivery."
+    />
+    <meta name="theme-color" content="#05060a" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Salman R Rana | Contact and Resume</title>
+    <link rel="icon" type="image/svg+xml" href="public/favicon-ecuador-urdu.svg" />
+    <script>
+      try {
+        if (window.sessionStorage.getItem("contactTransition") === "inbound") {
+          document.documentElement.classList.add("is-contact-arriving");
+          window.sessionStorage.removeItem("contactTransition");
+        }
+      } catch (_) {
+        /* Direct visits still render normally. */
+      }
+    </script>
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body class="contact-body">
+    <a class="skip-link" href="#resume-main">Skip to resume content</a>
+    <canvas class="contact-net" data-contact-net aria-hidden="true"></canvas>
+
+    <header class="contact-topbar" aria-label="Contact page navigation">
+      <a class="contact-wordmark" href="index.html" aria-label="Return to portfolio home">
+        <span>Salman R Rana</span>
+        <span>home</span>
+      </a>
+      <nav class="contact-nav" aria-label="Page links">
+        <a href="index.html">Home</a>
+        <a href="index.html#projects">Projects</a>
+        <a href="mailto:salman.r.rana@gmail.com">Email</a>
+      </nav>
+    </header>
+
+    <main class="resume-shell" id="resume-main">
+      <section class="resume-hero" aria-labelledby="resume-title">
+        <div class="resume-hero__copy">
+          <p class="resume-signal">Austin, TX / engineering manager / software engineer</p>
+          <h1
+            class="resume-title"
+            id="resume-title"
+            data-text="Software engineer."
+          >
+            Software engineer.
+          </h1>
+          <div class="resume-actions" aria-label="Primary contact links">
+            <a class="resume-action resume-action--primary" href="mailto:salman.r.rana@gmail.com">
+              Email Salman
+            </a>
+            <a class="resume-action" href="tel:+15129878299">Call</a>
+            <a class="resume-action" href="https://github.com/salmanrrana" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+            <a class="resume-action" href="https://www.linkedin.com/in/salmanrrana" target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>
+          </div>
+        </div>
+
+        <aside class="contact-dock" aria-label="Contact information">
+          <p class="contact-dock__label">Contact</p>
+          <a href="mailto:salman.r.rana@gmail.com">salman.r.rana@gmail.com</a>
+          <a href="tel:+15129878299">(512) 987-8299</a>
+          <a href="https://github.com/salmanrrana" target="_blank" rel="noreferrer">github.com/salmanrrana</a>
+          <a href="https://www.linkedin.com/in/salmanrrana" target="_blank" rel="noreferrer">
+            linkedin.com/in/salmanrrana
+          </a>
+        </aside>
+      </section>
+
+      <section class="resume-section resume-section--systems" aria-labelledby="systems-title">
+        <div class="section-heading">
+          <p class="section-kicker">Current proof</p>
+          <h2 id="systems-title">AI workflow systems with real engineering shape.</h2>
+        </div>
+
+        <div class="system-stack">
+          <article class="system-feature system-feature--primary">
+            <div class="system-feature__meta">
+              <p>Brain Dump</p>
+              <a href="https://github.com/salmanrrana/brain-dump" target="_blank" rel="noreferrer">
+                View repository
+              </a>
+            </div>
+            <div class="system-feature__body">
+              <h3>SDLC for agent-driven software work.</h3>
+              <p>
+                Brain Dump uses engineering concepts people already trust: projects, epics,
+                tickets, acceptance criteria, comments, review findings, demos, linked files,
+                and telemetry. The difference is how the work gets completed. AI agents can move
+                through the same quality workflow no matter which LLM provider is doing the work.
+              </p>
+              <ul>
+                <li>Provider-agnostic workflow for Codex, Claude, Cursor Agent, OpenCode, Pi, and other agents.</li>
+                <li>Ticket lifecycle from backlog through implementation, AI review, human review, and done.</li>
+                <li>Context, cost, review, and work history captured beside the work instead of buried in chat.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="system-feature">
+            <div class="system-feature__meta">
+              <p>Maa Faa Notes</p>
+              <a href="https://maa-faa-notes.lakebed.app/" target="_blank" rel="noreferrer">
+                Open app
+              </a>
+            </div>
+            <div class="system-feature__body">
+              <h3>Capture notes first, let AI organize the work later.</h3>
+              <p>
+                Maa Faa Notes is for the moments when opening a chat window is the wrong move.
+                It gives me a place to jot down anything, lets agents read the notes with context,
+                and keeps track of what the AI contributes back into the notebook.
+              </p>
+              <ul>
+                <li>Daily capture and shared notes reduce the need to prompt from scratch.</li>
+                <li>Agent contributions make AI activity visible instead of letting it disappear into a transcript.</li>
+                <li>Notes can become Brain Dump epics and tickets to solve now or save for another day.</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="resume-section" aria-labelledby="experience-title">
+        <div class="section-heading">
+          <p class="section-kicker">Experience</p>
+          <h2 id="experience-title">From hands-on frontend work to leading delivery.</h2>
+        </div>
+
+        <div class="resume-timeline">
+          <article class="timeline-item timeline-item--current">
+            <div class="timeline-item__meta">
+              <p class="timeline-company">Lone Wolf</p>
+              <p class="timeline-role">Engineering Manager</p>
+              <p class="timeline-date">May 8 - Present</p>
+            </div>
+            <div class="timeline-item__body">
+              <p>
+                Leading engineering work with the judgment of someone who has shipped the UI,
+                owned the technical direction, and carried the handoff all the way to production.
+              </p>
+              <ul>
+                <li>Manage engineering execution with a focus on quality, clarity, and maintainable delivery.</li>
+                <li>Use AI workflow systems to reduce context loss between planning, implementation, and review.</li>
+                <li>Translate product needs into concrete engineering work without losing sight of the people building it.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-item__meta">
+              <p class="timeline-company">Keller Williams Realty International</p>
+              <p class="timeline-role">Tech Lead / Senior Software Engineer / Front End Engineer</p>
+              <p class="timeline-date">August 2019 - May 8</p>
+            </div>
+            <div class="timeline-item__body">
+              <p>
+                Grew from frontend engineer into senior engineering and technical leadership,
+                building agent-facing web products and helping teams ship better software.
+              </p>
+              <ul>
+                <li>Built robust user interfaces with designers, product partners, and platform teams.</li>
+                <li>Integrated tracing and performance visibility into frontend and agent-created sites.</li>
+                <li>Mentored teammates, reviewed implementation direction, and raised delivery standards.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-item__meta">
+              <p class="timeline-company">Oracle</p>
+              <p class="timeline-role">Cloud Engineer / Full Stack Engineer</p>
+              <p class="timeline-date">June 2018 - August 2019</p>
+            </div>
+            <div class="timeline-item__body">
+              <ul>
+                <li>Developed POCs and customer-facing examples across Oracle cloud products.</li>
+                <li>Built and delivered hands-on workshops for cloud services and developer outreach.</li>
+                <li>Led analytics demand generation and developer education work.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-item__meta">
+              <p class="timeline-company">Bazaarvoice</p>
+              <p class="timeline-role">Technical Success Manager</p>
+              <p class="timeline-date">August 2017 - June 2018</p>
+            </div>
+            <div class="timeline-item__body">
+              <ul>
+                <li>Resolved client technical issues and turned recurring problems into clearer internal documentation.</li>
+                <li>Implemented code changes for client needs and worked across support, product, and engineering.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="timeline-item">
+            <div class="timeline-item__meta">
+              <p class="timeline-company">Apple</p>
+              <p class="timeline-role">Genius / Sales Specialist</p>
+              <p class="timeline-date">November 2011 - April 2017</p>
+            </div>
+            <div class="timeline-item__body">
+              <ul>
+                <li>Repaired customer relationships by solving hardware, software, and service problems under pressure.</li>
+                <li>Developed a check-in process adopted by multiple stores.</li>
+                <li>Earned Apple iOS and hardware certifications.</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    </main>
+
+    <script type="module" src="src/contact.js"></script>
+  </body>
+</html>

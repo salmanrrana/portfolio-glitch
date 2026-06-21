@@ -11,22 +11,31 @@ const PROJECTS = [
   {
     id: "brain-dump",
     title: "Brain Dump",
-    kind: "AI work OS",
-    description: "Ticketing, context, telemetry, review flow, and project memory for agent-driven software work.",
-    tags: ["Agents", "MCP", "Telemetry"],
+    kind: "AI SDLC system",
+    description: "Provider-agnostic software delivery workflow for agent work: epics, tickets, criteria, telemetry, reviews, demos, and project memory.",
+    tags: ["SDLC", "Agents", "MCP"],
     accent: "#008096",
     repoUrl: "https://github.com/salmanrrana/brain-dump",
   },
   {
     id: "maa-faa-notes",
     title: "Maa-Faa Notes",
-    kind: "Notes API",
-    description: "A notes system built around daily capture, shared context, and agent contributions.",
-    tags: ["Notes", "API", "Memory"],
+    kind: "Agent-aware notes",
+    description: "Daily capture and shared notes that let AI read context, record its contributions, and turn loose thoughts into Brain Dump work.",
+    tags: ["Notes", "Memory", "Agents"],
     accent: "#d20060",
     liveUrl: "https://maa-faa-notes.lakebed.app/",
     previewUrl: "https://maa-faa-notes.lakebed.app/",
     repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
+  },
+  {
+    id: "update-clankers",
+    title: "Update Clankers",
+    kind: "Provider skill",
+    description: "A one-command skill that detects installed AI coding CLIs across providers and updates Claude, Cursor Agent, OpenCode, Codex, and Pi in parallel.",
+    tags: ["Providers", "Agents", "CLI"],
+    accent: "#6d46ff",
+    repoUrl: "https://github.com/salmanrrana/update-clankers",
   },
   {
     id: "openbeats",
@@ -81,7 +90,9 @@ const PREVIEW_LOAD_TIMEOUT_MS = 10000;
 const PROJECT_LAYOUT_MS = 860;
 const NET_MAX_DPR = 1.35;
 const NET_SPACING = 74;
-const NET_TRAIL_LIMIT = 10;
+const NET_TRAIL_LIMIT = 7;
+const NET_POKE_MS = 48;
+const NET_POKE_DISTANCE = 18;
 
 const reduceMotion = () =>
   typeof window.matchMedia === "function" &&
@@ -268,6 +279,7 @@ function initGlitchNet(canvas) {
   let dpr = 1;
   let trails = [];
   let time = 0;
+  let lastPoke = { x: -9999, y: -9999, t: 0 };
 
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -283,6 +295,13 @@ function initGlitchNet(canvas) {
   function poke(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
+    const now = performance.now();
+    const dx = clientX - lastPoke.x;
+    const dy = clientY - lastPoke.y;
+    if (now - lastPoke.t < NET_POKE_MS && Math.hypot(dx, dy) < NET_POKE_DISTANCE) {
+      return;
+    }
+    lastPoke = { x: clientX, y: clientY, t: now };
     trails.push({
       x: (clientX - rect.left) * dpr,
       y: (clientY - rect.top) * dpr,
@@ -327,7 +346,7 @@ function initGlitchNet(canvas) {
         if (col === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
-      const alpha = 0.035 + 0.18 * influenceAt(w * 0.5, (row - 0.5) * spacing);
+      const alpha = 0.05 + 0.1 * influenceAt(w * 0.5, (row - 0.5) * spacing);
       ctx.strokeStyle = `rgba(0, 128, 150, ${alpha})`;
       ctx.lineWidth = 1 * dpr;
       ctx.stroke();
@@ -344,7 +363,7 @@ function initGlitchNet(canvas) {
         if (row === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
-      const alpha = 0.028 + 0.14 * influenceAt((col - 0.5) * spacing, h * 0.5);
+      const alpha = 0.018 + 0.035 * influenceAt((col - 0.5) * spacing, h * 0.5);
       ctx.strokeStyle = `rgba(210, 0, 96, ${alpha})`;
       ctx.lineWidth = 1 * dpr;
       ctx.stroke();
@@ -352,17 +371,24 @@ function initGlitchNet(canvas) {
 
     for (const trail of trails) {
       const alpha = trail.life;
-      const burst = 26 * dpr * alpha;
-      for (let i = 0; i < 7; i++) {
-        const x = trail.x + Math.sin(trail.seed + i * 1.7 + time * 0.01) * burst * (1 + i * 0.12);
-        const y = trail.y + Math.cos(trail.seed + i * 1.1 + time * 0.012) * burst * (0.7 + i * 0.08);
-        ctx.fillStyle = i % 2 ? `rgba(210, 0, 96, ${0.42 * alpha})` : `rgba(0, 128, 150, ${0.48 * alpha})`;
-        ctx.fillRect(x, y, (18 + i * 7) * dpr * alpha, Math.max(1, 2.5 * dpr));
+      const haze = ctx.createRadialGradient(trail.x, trail.y, 0, trail.x, trail.y, 170 * dpr * alpha);
+      haze.addColorStop(0, `rgba(0, 128, 150, ${0.08 * alpha})`);
+      haze.addColorStop(0.55, `rgba(210, 0, 96, ${0.018 * alpha})`);
+      haze.addColorStop(1, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = haze;
+      ctx.fillRect(trail.x - 180 * dpr, trail.y - 180 * dpr, 360 * dpr, 360 * dpr);
+
+      const burst = 16 * dpr * alpha;
+      for (let i = 0; i < 3; i++) {
+        const x = trail.x + Math.sin(trail.seed + i * 1.7 + time * 0.006) * burst * (1 + i * 0.1);
+        const y = trail.y + Math.cos(trail.seed + i * 1.1 + time * 0.007) * burst * (0.7 + i * 0.08);
+        ctx.fillStyle = i % 2 ? `rgba(210, 0, 96, ${0.055 * alpha})` : `rgba(0, 128, 150, ${0.16 * alpha})`;
+        ctx.fillRect(x, y, (10 + i * 4) * dpr * alpha, Math.max(1, 1.4 * dpr));
       }
     }
 
     trails = trails
-      .map((trail) => ({ ...trail, life: trail.life * 0.935 }))
+      .map((trail) => ({ ...trail, life: trail.life * 0.91 }))
       .filter((trail) => trail.life > 0.025);
   }
 
@@ -410,7 +436,7 @@ export function initProjects({ root = document, debug = false } = {}) {
   const previewOpen = root.querySelector("[data-project-preview-open]");
   const previewClose = root.querySelector("[data-project-preview-close]");
   const previewLoader = root.querySelector("[data-project-preview-loader]");
-  const projectClose = root.querySelector("[data-project-space-close]");
+  const projectHomeButtons = Array.from(root.querySelectorAll("[data-project-home]"));
   const netCanvas = root.querySelector("[data-project-glitch-net]");
   const projectLinks = Array.from(root.querySelectorAll('a[href="#projects"]'));
 
@@ -437,7 +463,24 @@ export function initProjects({ root = document, debug = false } = {}) {
   let projectsOpen = false;
   let activeRow = null;
 
-  function enterProjects(event) {
+  function syncNetSize() {
+    if (!netCanvas) return;
+    const height = Math.max(section.scrollHeight, section.clientHeight, window.innerHeight || 0);
+    netCanvas.style.height = `${height}px`;
+    net.resize();
+  }
+
+  function showProjects(shouldFocusRow) {
+    projectsOpen = true;
+    section.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("is-projects-open");
+    syncNetSize();
+    net.start();
+    window.requestAnimationFrame(syncNetSize);
+    if (shouldFocusRow) focusFirstRow(grid);
+  }
+
+  function enterProjects(event, instant = false) {
     if (event) event.preventDefault();
     window.clearTimeout(flashTimer);
     window.clearTimeout(flashCleanupTimer);
@@ -447,12 +490,14 @@ export function initProjects({ root = document, debug = false } = {}) {
       return;
     }
 
-    if (reduceMotion()) {
-      projectsOpen = true;
-      section.setAttribute("aria-hidden", "false");
-      document.documentElement.classList.add("is-projects-open");
-      net.start();
-      if (shouldFocusRow) focusFirstRow(grid);
+    if (reduceMotion() || instant) {
+      showProjects(shouldFocusRow);
+      if (instant && !reduceMotion()) {
+        section.classList.add("is-arriving");
+        flashCleanupTimer = window.setTimeout(() => {
+          section.classList.remove("is-arriving");
+        }, FLASH_MS);
+      }
       return;
     }
 
@@ -460,11 +505,7 @@ export function initProjects({ root = document, debug = false } = {}) {
     section.classList.add("is-arriving");
 
     flashTimer = window.setTimeout(() => {
-      projectsOpen = true;
-      section.setAttribute("aria-hidden", "false");
-      document.documentElement.classList.add("is-projects-open");
-      net.start();
-      if (shouldFocusRow) focusFirstRow(grid);
+      showProjects(shouldFocusRow);
     }, FLASH_OPEN_AT_MS);
 
     flashCleanupTimer = window.setTimeout(() => {
@@ -473,15 +514,22 @@ export function initProjects({ root = document, debug = false } = {}) {
     }, FLASH_MS);
   }
 
-  function closeProjects() {
+  function closeProjects(force = false) {
     if (!projectsOpen) return;
-    if (activeRow) {
+    if (activeRow && !force) {
       closeProject();
       return;
     }
 
     window.clearTimeout(flashTimer);
     window.clearTimeout(flashCleanupTimer);
+    if (activeRow) {
+      window.clearTimeout(frameLoadTimer);
+      window.clearTimeout(swapTimer);
+      window.clearTimeout(closeTimer);
+      window.clearTimeout(loadFallbackTimer);
+      finishClose();
+    }
 
     const finish = () => {
       projectsOpen = false;
@@ -489,6 +537,7 @@ export function initProjects({ root = document, debug = false } = {}) {
       document.documentElement.classList.remove("is-projects-open");
       section.classList.remove("is-arriving");
       net.stop();
+      if (netCanvas) netCanvas.style.height = "";
     };
 
     if (reduceMotion()) {
@@ -563,6 +612,7 @@ export function initProjects({ root = document, debug = false } = {}) {
     section.classList.add("is-viewing");
     preview.classList.remove("is-minimizing");
     showFrameLoading();
+    window.requestAnimationFrame(syncNetSize);
 
     if (wasViewing) {
       preview.classList.add("is-swapping");
@@ -598,6 +648,7 @@ export function initProjects({ root = document, debug = false } = {}) {
     clearActiveRow();
     activeRow = null;
     if (returnFocus) returnFocus.focus({ preventScroll: true });
+    window.requestAnimationFrame(syncNetSize);
   }
 
   function closeProject() {
@@ -628,6 +679,13 @@ export function initProjects({ root = document, debug = false } = {}) {
 
   function onPointerMove(event) {
     if (!projectsOpen) return;
+    if (grid.contains(event.target)) {
+      const rect = grid.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100;
+      const y = ((event.clientY - rect.top) / Math.max(1, rect.height)) * 100;
+      grid.style.setProperty("--project-haze-x", `${x}%`);
+      grid.style.setProperty("--project-haze-y", `${y}%`);
+    }
     net.poke(event.clientX, event.clientY);
   }
 
@@ -640,23 +698,33 @@ export function initProjects({ root = document, debug = false } = {}) {
   }
 
   function onResize() {
-    if (projectsOpen) net.resize();
+    if (projectsOpen) syncNetSize();
   }
 
   function onFrameLoad() {
     hideFrameLoading();
   }
 
+  function onProjectHomeClick() {
+    closeProjects(true);
+  }
+
   for (const link of projectLinks) {
     link.addEventListener("click", enterProjects);
   }
+  for (const button of projectHomeButtons) {
+    button.addEventListener("click", onProjectHomeClick);
+  }
   grid.addEventListener("click", onGridClick);
-  projectClose?.addEventListener("click", closeProjects);
   previewClose?.addEventListener("click", closeProject);
   frame.addEventListener("load", onFrameLoad);
   section.addEventListener("pointermove", onPointerMove);
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("resize", onResize);
+
+  if (typeof window !== "undefined" && window.location.hash === "#projects") {
+    window.setTimeout(() => enterProjects(null, true), 0);
+  }
 
   if (debug) {
     // eslint-disable-next-line no-console
@@ -675,8 +743,10 @@ export function initProjects({ root = document, debug = false } = {}) {
       for (const link of projectLinks) {
         link.removeEventListener("click", enterProjects);
       }
+      for (const button of projectHomeButtons) {
+        button.removeEventListener("click", onProjectHomeClick);
+      }
       grid.removeEventListener("click", onGridClick);
-      projectClose?.removeEventListener("click", closeProjects);
       previewClose?.removeEventListener("click", closeProject);
       frame.removeEventListener("load", onFrameLoad);
       section.removeEventListener("pointermove", onPointerMove);
