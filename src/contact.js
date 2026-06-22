@@ -16,6 +16,8 @@ const POKE_MS = 54;
 const POKE_DISTANCE = 20;
 const ARRIVAL_CLEANUP_MS = 1600;
 const ROUTE_NAVIGATE_AT_MS = 900;
+const INDEX_TRANSITION_KEY = "indexTransition";
+const PROJECTS_TRANSITION_KEY = "indexProjectsTransition";
 
 let raf = 0;
 let running = false;
@@ -59,8 +61,12 @@ function initRouteTransitions() {
       return;
     }
 
+    const isProjectsRoute = new URL(link.href, window.location.href).hash === "#projects";
     try {
-      window.sessionStorage.setItem("indexTransition", "inbound");
+      window.sessionStorage.setItem(
+        isProjectsRoute ? PROJECTS_TRANSITION_KEY : INDEX_TRANSITION_KEY,
+        "inbound"
+      );
     } catch (_) {
       /* Navigation still works without sessionStorage. */
     }

@@ -11,6 +11,7 @@ import { createTimeline } from "./timeline.js";
 import { initGlitch } from "./glitch.js";
 import { initScenes } from "./scenes.js";
 import { initProjects } from "./projects.js";
+import { initScrollCue } from "./scroll-cue.js";
 
 // This module executing at all means the ES-module graph loaded successfully, so
 // cancel the inline self-heal fallback (index.html) that would otherwise reveal
@@ -352,6 +353,7 @@ function init() {
   let timeline = null;
   let glitch = null;
   let scenes = null;
+  let scrollCue = null;
   let projects = null;
   let contactTransitions = null;
   let indexArrival = null;
@@ -384,6 +386,7 @@ function init() {
     // in sync with the shader's glitch surges. Returns null (leaving the static
     // title/links visible) if the markup hooks are absent.
     scenes = initScenes({ timeline, debug: DEBUG });
+    scrollCue = initScrollCue({ timeline, debug: DEBUG });
     projects = initProjects({ debug: DEBUG });
     contactTransitions = initContactTransitions();
     indexArrival = initIndexArrival();
@@ -403,7 +406,7 @@ function init() {
     // Expose the single timeline + controllers so downstream modules (the
     // hardening pass) subscribe to the same clock and can dial things instead of
     // making their own.
-    window.glitchPortfolio = { timeline, glitch, scenes, projects, contactTransitions, indexArrival, power, tier };
+    window.glitchPortfolio = { timeline, glitch, scenes, scrollCue, projects, contactTransitions, indexArrival, power, tier };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";
@@ -419,7 +422,7 @@ function init() {
     document.documentElement.classList.remove("js");
     // Tear down whatever started before the throw so we don't leak a running rAF
     // loop (each guarded — a destroy must not mask the original bootstrap error).
-    for (const controller of [power, indexArrival, contactTransitions, projects, glitch, scenes, timeline]) {
+    for (const controller of [power, indexArrival, contactTransitions, projects, scrollCue, glitch, scenes, timeline]) {
       try {
         controller?.destroy?.();
       } catch (_) {

@@ -283,6 +283,92 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Scroll cue
+   Fixed to the viewport bottom so visitors always know whether the sticky
+   narrative has more distance left. src/scroll-cue.js swaps the label to FIN at
+   the actual bottom and stops the downward chevron.
+   -------------------------------------------------------------------------- */
+.scroll-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  z-index: 55;
+  min-width: min(13rem, calc(100vw - 2rem));
+  display: grid;
+  justify-items: center;
+  gap: 0.34rem;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 1.5vw, 0.82rem);
+  line-height: 1;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-50%, 0, 0);
+  transition: opacity 220ms ease, color 220ms ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.js .scroll-cue {
+  opacity: 1;
+}
+
+:root.is-projects-open .scroll-cue {
+  opacity: 0;
+}
+
+.scroll-cue__label {
+  max-width: 100%;
+  min-height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.42rem 0.65rem;
+  color: currentColor;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.72);
+  white-space: nowrap;
+  background: rgba(5, 6, 10, 0.58);
+  border: 1px solid rgba(244, 246, 251, 0.34);
+  border-radius: 999px;
+}
+
+.scroll-cue__arrow {
+  width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  color: currentColor;
+  filter: drop-shadow(0 1px 8px rgba(0, 0, 0, 0.72));
+  animation: scroll-cue-bounce 980ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.scroll-cue__chevron {
+  width: 0.68rem;
+  height: 0.68rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.scroll-cue[data-state="end"] {
+  color: var(--accent);
+}
+
+.scroll-cue[data-state="end"] .scroll-cue__label {
+  background: rgba(5, 6, 10, 0.68);
+  border-color: rgba(94, 242, 214, 0.58);
+}
+
+.scroll-cue[data-state="end"] .scroll-cue__arrow {
+  opacity: 0;
+  transform: translateY(-0.2rem) scale(0.72);
+  animation: none;
+}
+
+/* --------------------------------------------------------------------------
    Non-scroll access: skip link + minimal quick-links nav (hardening / a11y)
 
    The Contact/Projects calls-to-action only reveal at the end of the long
@@ -1025,6 +1111,18 @@ body {
   }
 }
 
+@keyframes scroll-cue-bounce {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: translateY(0);
+  }
+  44% {
+    opacity: 1;
+    transform: translateY(0.42rem);
+  }
+}
+
 /* --------------------------------------------------------------------------
    Contact / resume page
    -------------------------------------------------------------------------- */
@@ -1589,6 +1687,11 @@ body.contact-body {
     opacity: 1;
     transform: none;
     pointer-events: auto;
+  }
+
+  .scroll-cue__arrow {
+    animation: none;
+    transform: translateY(0.2rem);
   }
 
   .project-space__inner,

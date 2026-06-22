@@ -104,10 +104,22 @@ const NET_SPACING = 74;
 const NET_TRAIL_LIMIT = 7;
 const NET_POKE_MS = 48;
 const NET_POKE_DISTANCE = 18;
+const PROJECTS_TRANSITION_KEY = "indexProjectsTransition";
 
 const reduceMotion = () =>
   typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function consumeProjectsRouteTransition() {
+  if (typeof window === "undefined") return false;
+  try {
+    const isInbound = window.sessionStorage.getItem(PROJECTS_TRANSITION_KEY) === "inbound";
+    window.sessionStorage.removeItem(PROJECTS_TRANSITION_KEY);
+    return isInbound;
+  } catch (_) {
+    return false;
+  }
+}
 
 const escapeHtml = (value) =>
   String(value)
@@ -733,8 +745,9 @@ export function initProjects({ root = document, debug = false } = {}) {
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("resize", onResize);
 
+  const routedProjectsTransition = consumeProjectsRouteTransition();
   if (typeof window !== "undefined" && window.location.hash === "#projects") {
-    window.setTimeout(() => enterProjects(null, true), 0);
+    window.setTimeout(() => enterProjects(null, !routedProjectsTransition), 0);
   }
 
   if (debug) {
