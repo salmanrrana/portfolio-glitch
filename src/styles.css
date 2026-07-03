@@ -1131,7 +1131,7 @@ body.contact-body {
   min-height: 100svh;
   color: var(--fg);
   background:
-    radial-gradient(circle at var(--contact-glow-x, 72vw) var(--contact-glow-y, 18vh), rgba(94, 242, 214, 0.15), transparent 28rem),
+    radial-gradient(circle at var(--contact-glow-x, 72vw) var(--contact-glow-y, 18vh), rgba(94, 242, 214, 0.09), transparent 12rem),
     radial-gradient(circle at 12% 22%, rgba(255, 79, 154, 0.16), transparent 26rem),
     radial-gradient(circle at 84% 78%, rgba(94, 242, 214, 0.11), transparent 30rem),
     var(--bg);
