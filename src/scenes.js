@@ -8,7 +8,7 @@
 //   titleHold    → title stays resolved long enough to breathe
 //   titleFade    → the title drifts away on continued scroll
 //   glitchWave2  → a second sky-glitch wave (driven by glitch.js; title gone)
-//   outro        → sky settles clean; Contact + Projects links reveal
+//   outro        → sky settles clean; Projects link reveals
 //
 // This module owns only the DOM presentation of the title and outro. It reads
 // the SAME timeline the glitch shader reads (one clock, frame-synced) and writes

@@ -44,15 +44,6 @@ const VIDEO_SOURCES = {
   ],
 };
 
-const CONTACT_NAVIGATE_AT_MS = 900;
-
-function prefersReducedMotion() {
-  return (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
 /**
  * Choose a media tier for the current viewport AND connection. Save-data or a
  * 2G-class link stays poster-only — no multi-MB video download at all (the CSS
@@ -275,61 +266,6 @@ function mountDebugOverlay(timeline) {
   });
 }
 
-function initContactTransitions({ root = document } = {}) {
-  const links = Array.from(root.querySelectorAll('a[href="contact.html"]'));
-  if (!links.length) return null;
-
-  let navTimer = 0;
-
-  function onContactClick(event) {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
-
-    const link = event.currentTarget;
-    if (!link || link.target) return;
-
-    event.preventDefault();
-    window.clearTimeout(navTimer);
-
-    if (prefersReducedMotion()) {
-      window.location.href = link.href;
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem("contactTransition", "inbound");
-    } catch (_) {
-      /* sessionStorage is best-effort; the link still navigates without it. */
-    }
-    document.documentElement.classList.add("is-contact-flashing");
-    navTimer = window.setTimeout(() => {
-      window.location.href = link.href;
-    }, CONTACT_NAVIGATE_AT_MS);
-  }
-
-  for (const link of links) {
-    link.addEventListener("click", onContactClick);
-  }
-
-  return {
-    destroy() {
-      window.clearTimeout(navTimer);
-      document.documentElement.classList.remove("is-contact-flashing");
-      for (const link of links) {
-        link.removeEventListener("click", onContactClick);
-      }
-    },
-  };
-}
-
 function initIndexArrival() {
   if (!document.documentElement.classList.contains("is-index-arriving")) return null;
 
@@ -355,7 +291,6 @@ function init() {
   let scenes = null;
   let scrollCue = null;
   let projects = null;
-  let contactTransitions = null;
   let indexArrival = null;
   let power = null;
 
@@ -382,13 +317,12 @@ function init() {
       : initGlitch({ video, canvas: glitchCanvas, timeline, debug: DEBUG });
 
     // Scroll narrative: reveals the title, fades it, then reveals the outro
-    // Contact/Projects links — all timed off the same timeline so the text stays
+    // Projects link — all timed off the same timeline so the text stays
     // in sync with the shader's glitch surges. Returns null (leaving the static
     // title/links visible) if the markup hooks are absent.
     scenes = initScenes({ timeline, debug: DEBUG });
     scrollCue = initScrollCue({ timeline, debug: DEBUG });
     projects = initProjects({ debug: DEBUG });
-    contactTransitions = initContactTransitions();
     indexArrival = initIndexArrival();
 
     // Single battery/CPU authority: pauses the rAF loops + video when the hero
@@ -406,7 +340,7 @@ function init() {
     // Expose the single timeline + controllers so downstream modules (the
     // hardening pass) subscribe to the same clock and can dial things instead of
     // making their own.
-    window.glitchPortfolio = { timeline, glitch, scenes, scrollCue, projects, contactTransitions, indexArrival, power, tier };
+    window.glitchPortfolio = { timeline, glitch, scenes, scrollCue, projects, indexArrival, power, tier };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";
@@ -422,7 +356,7 @@ function init() {
     document.documentElement.classList.remove("js");
     // Tear down whatever started before the throw so we don't leak a running rAF
     // loop (each guarded — a destroy must not mask the original bootstrap error).
-    for (const controller of [power, indexArrival, contactTransitions, projects, scrollCue, glitch, scenes, timeline]) {
+    for (const controller of [power, indexArrival, projects, scrollCue, glitch, scenes, timeline]) {
       try {
         controller?.destroy?.();
       } catch (_) {
