@@ -10,7 +10,7 @@ Hiring managers, technical peers, collaborators, and curious visitors evaluating
 
 ## Product Purpose
 
-Present Salman R Rana as a software engineer through a scroll-driven, full-viewport portfolio that feels authored rather than templated. Success means visitors remember the interaction, can reach contact links without friction, and can inspect projects without losing the portfolio context.
+Present Salman R Rana as a software engineer through a scroll-driven, full-viewport portfolio that feels authored rather than templated. Success means visitors remember the interaction and can inspect projects without losing the portfolio context.
 
 ## Brand Personality
 
@@ -24,7 +24,7 @@ Avoid beige startup pages, generic SaaS card grids, terminal cosplay, stock port
 
 - Let the video world drive the interface; overlays should feel like they are emerging from the same physical scene.
 - Use distortion as navigation, not decoration.
-- Keep the primary path simple: name, contact, projects, then project inspection.
+- Keep the primary path simple: name, projects, then project inspection.
 - Make motion intense for users who want it and calm for users who request reduced motion.
 - Preserve performance and accessibility even when the visuals get strange.
 
