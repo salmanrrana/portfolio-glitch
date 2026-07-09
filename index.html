@@ -43,14 +43,6 @@
     -->
     <script>
       document.documentElement.classList.add("js");
-      try {
-        if (window.sessionStorage.getItem("indexTransition") === "inbound") {
-          document.documentElement.classList.add("is-index-arriving");
-          window.sessionStorage.removeItem("indexTransition");
-        }
-      } catch (_) {
-        /* Direct visits still render normally. */
-      }
       window.__scrollNarrativeFallback = window.setTimeout(function () {
         document.documentElement.classList.remove("js");
       }, 3000);

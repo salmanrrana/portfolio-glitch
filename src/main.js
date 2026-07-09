@@ -266,21 +266,6 @@ function mountDebugOverlay(timeline) {
   });
 }
 
-function initIndexArrival() {
-  if (!document.documentElement.classList.contains("is-index-arriving")) return null;
-
-  const cleanupTimer = window.setTimeout(() => {
-    document.documentElement.classList.remove("is-index-arriving");
-  }, 1450);
-
-  return {
-    destroy() {
-      window.clearTimeout(cleanupTimer);
-      document.documentElement.classList.remove("is-index-arriving");
-    },
-  };
-}
-
 function init() {
   // Declared out here so the catch block can tear down anything that already
   // started its rAF loop before a later line threw. Since the per-module
@@ -291,7 +276,6 @@ function init() {
   let scenes = null;
   let scrollCue = null;
   let projects = null;
-  let indexArrival = null;
   let power = null;
 
   // Error boundary: this is the seam where later tickets wire glitch.js and
@@ -323,8 +307,6 @@ function init() {
     scenes = initScenes({ timeline, debug: DEBUG });
     scrollCue = initScrollCue({ timeline, debug: DEBUG });
     projects = initProjects({ debug: DEBUG });
-    indexArrival = initIndexArrival();
-
     // Single battery/CPU authority: pauses the rAF loops + video when the hero
     // is offscreen or the tab is hidden, and resumes them together. timeline.js
     // and glitch.js delegate their visibility handling to this.
@@ -340,7 +322,7 @@ function init() {
     // Expose the single timeline + controllers so downstream modules (the
     // hardening pass) subscribe to the same clock and can dial things instead of
     // making their own.
-    window.glitchPortfolio = { timeline, glitch, scenes, scrollCue, projects, indexArrival, power, tier };
+    window.glitchPortfolio = { timeline, glitch, scenes, scrollCue, projects, power, tier };
 
     if (DEBUG) {
       document.documentElement.dataset.debug = "true";
@@ -356,7 +338,7 @@ function init() {
     document.documentElement.classList.remove("js");
     // Tear down whatever started before the throw so we don't leak a running rAF
     // loop (each guarded — a destroy must not mask the original bootstrap error).
-    for (const controller of [power, indexArrival, projects, scrollCue, glitch, scenes, timeline]) {
+    for (const controller of [power, projects, scrollCue, glitch, scenes, timeline]) {
       try {
         controller?.destroy?.();
       } catch (_) {
