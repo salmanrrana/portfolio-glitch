@@ -60,7 +60,7 @@
     <!--
       Non-scroll access to the calls-to-action (hardening / a11y).
 
-      The narrative reveals Contact/Projects only at the end of a long scroll, so
+      The narrative reveals Projects only at the end of a long scroll, so
       keyboard and prefers-reduced-motion users need a path that doesn't require
       the full journey. This skip link + minimal nav provides it:
         • The skip link is the first focusable element — Tab once, Enter, and the
@@ -70,9 +70,8 @@
           shown persistently under reduced motion (where there is no scroll show).
       Keep these hrefs in sync with the outro <nav class="outro"> below.
     -->
-    <a class="skip-link" href="#site-nav">Skip to contact &amp; projects</a>
+    <a class="skip-link" href="#site-nav">Skip to projects</a>
     <nav class="site-nav" id="site-nav" aria-label="Quick links">
-      <a class="site-nav__link" href="contact.html">Contact</a>
       <a class="site-nav__link" href="#projects">Projects</a>
     </nav>
 
@@ -137,15 +136,13 @@
           </h1>
 
           <!--
-            Outro links. These are the only two calls-to-action in the splash.
+            Outro link. Projects is the sole call-to-action in the splash.
             ┌─ EDIT HERE ────────────────────────────────────────────────────┐
-            │ Contact  → update the contact page URL below.                   │
             │ Projects → replace the "#projects" placeholder with the real    │
             │            projects URL (or keep it as an in-page anchor).      │
             └────────────────────────────────────────────────────────────────┘
           -->
-          <nav class="outro" data-outro aria-label="Get in touch">
-            <a class="outro__link" href="contact.html">Contact</a>
+          <nav class="outro" data-outro aria-label="Projects">
             <a class="outro__link" href="#projects">Projects</a>
           </nav>
         </div>
@@ -170,7 +167,6 @@
         </button>
         <nav class="project-nav" aria-label="Project page links">
           <button type="button" data-project-home>Home</button>
-          <a href="contact.html">Contact</a>
         </nav>
       </header>
 
