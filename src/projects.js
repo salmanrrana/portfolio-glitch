@@ -9,26 +9,31 @@
 
 const PROJECTS = [
   {
+    id: "brain-dump",
+    title: "Brain Dump",
+    kind: "AI SDLC system",
+    description: "Provider-agnostic software delivery workflow for agent work: epics, tickets, criteria, telemetry, reviews, demos, and project memory.",
+    tags: ["SDLC", "Agents", "MCP"],
+    accent: "#008096",
+    repoUrl: "https://github.com/salmanrrana/brain-dump",
+  },
+  {
+    id: "maa-faa-notes",
+    title: "Maa-Faa Notes",
+    kind: "Agent-aware notes",
+    description: "Daily capture and shared notes that let AI read context, record its contributions, and turn loose thoughts into Brain Dump work.",
+    tags: ["Notes", "Memory", "Agents"],
+    accent: "#d20060",
+    repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
+  },
+  {
     id: "eightbit",
     title: "Eightbit",
     kind: "Terminal platformer",
     description: "A retro platformer for the terminal, rendered in truecolor pixel graphics.",
     tags: ["Terminal", "Node.js", "Truecolor"],
     accent: "#ff9d00",
-    liveUrl: "https://www.npmjs.com/package/eightbit",
-    previewUrl: "https://www.npmjs.com/package/eightbit",
     repoUrl: "https://github.com/salmanrrana/8-bit",
-  },
-  {
-    id: "ranatable",
-    title: "Ranatable",
-    kind: "Spectral instrument",
-    description: "A gestural instrument played entirely with your hands: a camera theremin and a table of living glyphs built on MediaPipe hand tracking and Tone.js.",
-    tags: ["Hand tracking", "Tone.js", "Web Audio"],
-    accent: "#9b1b9e",
-    liveUrl: "https://screenpowers.netlify.app/",
-    previewUrl: "https://screenpowers.netlify.app/",
-    repoUrl: "https://github.com/salmanrrana/ranatable",
   },
   {
     id: "fretbloom",
@@ -40,6 +45,17 @@ const PROJECTS = [
     liveUrl: "https://fretbloom.netlify.app/",
     previewUrl: "https://fretbloom.netlify.app/",
     repoUrl: "https://github.com/salmanrrana/fretbloom",
+  },
+  {
+    id: "ranatable",
+    title: "Ranatable",
+    kind: "Spectral instrument",
+    description: "A gestural instrument played entirely with your hands: a camera theremin and a table of living glyphs built on MediaPipe hand tracking and Tone.js.",
+    tags: ["Hand tracking", "Tone.js", "Web Audio"],
+    accent: "#9b1b9e",
+    liveUrl: "https://screenpowers.netlify.app/",
+    previewUrl: "https://screenpowers.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/ranatable",
   },
   {
     id: "ranaether",
@@ -62,26 +78,6 @@ const PROJECTS = [
     liveUrl: "https://wonderflip.netlify.app/",
     previewUrl: "https://wonderflip.netlify.app/",
     repoUrl: "https://github.com/salmanrrana/wonderflip",
-  },
-  {
-    id: "brain-dump",
-    title: "Brain Dump",
-    kind: "AI SDLC system",
-    description: "Provider-agnostic software delivery workflow for agent work: epics, tickets, criteria, telemetry, reviews, demos, and project memory.",
-    tags: ["SDLC", "Agents", "MCP"],
-    accent: "#008096",
-    repoUrl: "https://github.com/salmanrrana/brain-dump",
-  },
-  {
-    id: "maa-faa-notes",
-    title: "Maa-Faa Notes",
-    kind: "Agent-aware notes",
-    description: "Daily capture and shared notes that let AI read context, record its contributions, and turn loose thoughts into Brain Dump work.",
-    tags: ["Notes", "Memory", "Agents"],
-    accent: "#d20060",
-    liveUrl: "https://maa-faa-notes.lakebed.app/",
-    previewUrl: "https://maa-faa-notes.lakebed.app/",
-    repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
   },
   {
     id: "openscapes",
@@ -206,11 +202,8 @@ function renderPreviewDoc(project) {
         margin: 0;
         overflow: hidden;
         background:
-          linear-gradient(90deg, rgba(5, 6, 10, 0.045) 1px, transparent 1px),
-          linear-gradient(180deg, rgba(5, 6, 10, 0.045) 1px, transparent 1px),
           radial-gradient(circle at 20% 22%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 26rem),
           #ffffff;
-        background-size: 54px 54px, 54px 54px, auto, auto;
       }
       main {
         min-height: 100vh;
