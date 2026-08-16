@@ -58,6 +58,17 @@ const PROJECTS = [
     repoUrl: "https://github.com/salmanrrana/ranatable",
   },
   {
+    id: "senal",
+    title: "Señal",
+    kind: "Moiré instrument",
+    description: "Your machine, printed as interference. A WebGL2 moiré field with detuned drone audio, steered by opt-in signals — camera, gyroscope, light, and location. Nothing leaves the device.",
+    tags: ["WebGL2", "Web Audio", "Generative"],
+    accent: "#a3670a",
+    liveUrl: "https://senal-moire.netlify.app/",
+    previewUrl: "https://senal-moire.netlify.app/",
+    repoUrl: "https://github.com/salmanrrana/senal",
+  },
+  {
     id: "ranaether",
     title: "Ranaether",
     kind: "Gestural instrument",
@@ -156,6 +167,9 @@ const NET_TRAIL_LIMIT = 7;
 const NET_POKE_MS = 48;
 const NET_POKE_DISTANCE = 18;
 const PROJECTS_TRANSITION_KEY = "indexProjectsTransition";
+// Below this width the iframe preview is dropped; rows expand in place with
+// direct links to the live site/repo instead.
+const MOBILE_LAYOUT_QUERY = "(max-width: 980px)";
 
 const reduceMotion = () =>
   typeof window.matchMedia === "function" &&
@@ -301,6 +315,8 @@ function renderProjectRows(grid) {
     button.dataset.projectId = project.id;
     button.style.setProperty("--project-accent", project.accent);
     button.setAttribute("aria-label", `Preview ${project.title}`);
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-controls", `project-detail-${project.id}`);
     button.innerHTML = `
       <span class="project-row__number">${String(index + 1).padStart(2, "0")}</span>
       <span class="project-row__body">
@@ -314,6 +330,27 @@ function renderProjectRows(grid) {
       <span class="project-row__action">Inspect</span>
     `;
     frag.appendChild(button);
+
+    // Mobile-only expansion panel: no iframe on small screens, just direct
+    // links out to the live site and repo. Hidden entirely on desktop.
+    const detail = document.createElement("div");
+    detail.className = "project-detail";
+    detail.id = `project-detail-${project.id}`;
+    detail.dataset.projectDetail = project.id;
+    detail.style.setProperty("--project-accent", project.accent);
+    detail.inert = true;
+    const liveLink = project.liveUrl
+      ? `<a class="project-detail__link project-detail__link--primary" href="${escapeHtml(project.liveUrl)}" target="_blank" rel="noreferrer">Visit the live site</a>`
+      : "";
+    detail.innerHTML = `
+      <div class="project-detail__inner">
+        <div class="project-detail__links">
+          ${liveLink}
+          <a class="project-detail__link" href="${escapeHtml(project.repoUrl || GITHUB_URL)}" target="_blank" rel="noreferrer">View the code</a>
+        </div>
+      </div>
+    `;
+    frag.appendChild(detail);
   });
   grid.replaceChildren(frag);
 }
@@ -525,6 +562,9 @@ export function initProjects({ root = document, debug = false } = {}) {
   preview.inert = true;
 
   const net = initGlitchNet(netCanvas);
+  const mobileLayout = typeof window.matchMedia === "function"
+    ? window.matchMedia(MOBILE_LAYOUT_QUERY)
+    : null;
   let flashTimer = 0;
   let flashCleanupTimer = 0;
   let frameLoadTimer = 0;
@@ -533,6 +573,9 @@ export function initProjects({ root = document, debug = false } = {}) {
   let closeTimer = 0;
   let projectsOpen = false;
   let activeRow = null;
+  let expandedRow = null;
+
+  const isMobileLayout = () => Boolean(mobileLayout && mobileLayout.matches);
 
   function syncNetSize() {
     if (!netCanvas) return;
@@ -587,6 +630,7 @@ export function initProjects({ root = document, debug = false } = {}) {
 
   function closeProjects(force = false) {
     if (!projectsOpen) return;
+    if (expandedRow) collapseRow(expandedRow);
     if (activeRow && !force) {
       closeProject();
       return;
@@ -741,11 +785,59 @@ export function initProjects({ root = document, debug = false } = {}) {
     closeTimer = window.setTimeout(finishClose, PROJECT_LAYOUT_MS);
   }
 
+  function detailFor(row) {
+    return row ? grid.querySelector(`[data-project-detail="${row.dataset.projectId}"]`) : null;
+  }
+
+  function collapseRow(row) {
+    if (!row) return;
+    const detail = detailFor(row);
+    row.classList.remove("is-expanded");
+    row.setAttribute("aria-expanded", "false");
+    if (detail) {
+      detail.classList.remove("is-expanded");
+      detail.inert = true;
+      detail.style.maxHeight = "";
+    }
+    if (expandedRow === row) expandedRow = null;
+    window.requestAnimationFrame(syncNetSize);
+  }
+
+  function expandRow(row) {
+    // Accordion: expanding one row collapses whichever row was open before.
+    if (expandedRow && expandedRow !== row) collapseRow(expandedRow);
+    const detail = detailFor(row);
+    if (!detail) return;
+    expandedRow = row;
+    row.classList.add("is-expanded");
+    row.setAttribute("aria-expanded", "true");
+    detail.classList.add("is-expanded");
+    detail.inert = false;
+    detail.style.maxHeight = `${detail.scrollHeight}px`;
+    window.requestAnimationFrame(syncNetSize);
+  }
+
   function onGridClick(event) {
     const row = event.target.closest("[data-project-id]");
     if (!row || !grid.contains(row)) return;
     const project = PROJECTS.find((item) => item.id === row.dataset.projectId);
-    if (project) openProject(project, row);
+    if (!project) return;
+    if (isMobileLayout()) {
+      if (expandedRow === row) collapseRow(row);
+      else expandRow(row);
+      return;
+    }
+    openProject(project, row);
+  }
+
+  function onLayoutChange() {
+    // Crossing the breakpoint with a panel open in the other mode leaves
+    // orphaned state; reset both presentations.
+    if (isMobileLayout()) {
+      if (activeRow) closeProject();
+    } else if (expandedRow) {
+      collapseRow(expandedRow);
+    }
   }
 
   function onPointerMove(event) {
@@ -763,7 +855,8 @@ export function initProjects({ root = document, debug = false } = {}) {
   function onKeydown(event) {
     if (event.key === "Escape" && projectsOpen) {
       event.preventDefault();
-      if (activeRow) closeProject();
+      if (expandedRow) collapseRow(expandedRow);
+      else if (activeRow) closeProject();
       else closeProjects();
     }
   }
@@ -792,6 +885,7 @@ export function initProjects({ root = document, debug = false } = {}) {
   section.addEventListener("pointermove", onPointerMove);
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("resize", onResize);
+  mobileLayout?.addEventListener("change", onLayoutChange);
 
   const routedProjectsTransition = consumeProjectsRouteTransition();
   if (typeof window !== "undefined" && window.location.hash === "#projects") {
@@ -824,6 +918,7 @@ export function initProjects({ root = document, debug = false } = {}) {
       section.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("keydown", onKeydown);
       window.removeEventListener("resize", onResize);
+      mobileLayout?.removeEventListener("change", onLayoutChange);
     },
   };
 }
