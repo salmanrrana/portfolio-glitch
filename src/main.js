@@ -307,6 +307,7 @@ function init() {
     scenes = initScenes({ timeline, debug: DEBUG });
     scrollCue = initScrollCue({ timeline, debug: DEBUG });
     projects = initProjects({ debug: DEBUG });
+
     // Single battery/CPU authority: pauses the rAF loops + video when the hero
     // is offscreen or the tab is hidden, and resumes them together. timeline.js
     // and glitch.js delegate their visibility handling to this.

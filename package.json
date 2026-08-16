@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node --check scripts/serve-static.mjs && node --check src/main.js && node --check src/projects.js && node --check src/scenes.js && node --check src/timeline.js && node --check src/glitch.js && node --check src/scroll-cue.js",
+    "start": "node scripts/serve-static.mjs",
+    "serve": "node scripts/serve-static.mjs",
+    "test": "npm run check"
   },
   "keywords": [],
   "author": "",

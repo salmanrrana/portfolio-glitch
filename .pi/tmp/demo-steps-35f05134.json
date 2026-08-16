@@ -1,0 +1,26 @@
+[
+  {
+    "order": 1,
+    "description": "Serve the portfolio locally and open http://127.0.0.1:9876/contact.html in a desktop browser.",
+    "expectedOutcome": "The contact/resume page loads with the existing ambient pink and teal background gradients still balanced behind the content.",
+    "type": "manual"
+  },
+  {
+    "order": 2,
+    "description": "Move the pointer slowly across the top half of the contact page.",
+    "expectedOutcome": "The green cursor-follow glow remains centered near the pointer but appears as a smaller, softer accent rather than a wide page wash.",
+    "type": "manual"
+  },
+  {
+    "order": 3,
+    "description": "Move the pointer toward each side and corner of the viewport, then pause over the page content.",
+    "expectedOutcome": "The glow continues to track the cursor via the existing CSS variables without overpowering text or upsetting the static ambient gradients.",
+    "type": "manual"
+  },
+  {
+    "order": 4,
+    "description": "Scroll down the contact page while moving the pointer intermittently.",
+    "expectedOutcome": "The cursor glow still has the original viewport-painted shrink/fade-off behavior as the body scrolls; it was not converted to fixed or page-relative positioning.",
+    "type": "manual"
+  }
+]

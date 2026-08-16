@@ -14,7 +14,7 @@ the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — 
 > narrative (`src/scenes.js`) is live too: the title reveals out of the glitch,
 > fades, and the experience ends on a clean outro with Projects as the remaining CTA.
 > Projects open as a fixed overlay from the video via a slow white fade,
-> with eight temporary project rows, iframe previews, and a lightweight
+> with thirteen project rows, iframe previews, and a lightweight
 > pointer-reactive glitch net that stays behind the project information. The final
 > cross-device hardening pass is in — adaptive/connection-aware media loading,
 > battery-saving pause when hidden/offscreen, weak-GPU degradation, and a
@@ -169,7 +169,7 @@ the glitch shader and drives the title and outro links per scene:
 `src/projects.js` owns the project area. The page does **not** scroll down into a
 separate projects section when JS is active; clicking Projects keeps the visitor
 on the video scroll position, flashes the screen white, then fades in a fixed
-overlay. The eight project rows are rendered from the `PROJECTS` array.
+overlay. The project rows are rendered from the `PROJECTS` array.
 
 - Update each project object with the final description, tags, live preview URL,
   repository URL, and accent color as those projects are ready.
