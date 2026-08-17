@@ -24,6 +24,8 @@ const PROJECTS = [
     description: "Daily capture and shared notes that let AI read context, record its contributions, and turn loose thoughts into Brain Dump work.",
     tags: ["Notes", "Memory", "Agents"],
     accent: "#d20060",
+    liveUrl: "https://maa-faa-notes.lakebed.app/",
+    previewUrl: "https://maa-faa-notes.lakebed.app/",
     repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
   },
   {
