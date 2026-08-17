@@ -25,7 +25,6 @@ const PROJECTS = [
     tags: ["Notes", "Memory", "Agents"],
     accent: "#d20060",
     liveUrl: "https://maa-faa-notes.lakebed.app/",
-    previewUrl: "https://maa-faa-notes.lakebed.app/",
     repoUrl: "https://github.com/salmanrrana/maa-faa-notes",
   },
   {
