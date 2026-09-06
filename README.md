@@ -6,6 +6,13 @@ only the **sky** region of the video glitches (RGB-split, displacement, datamosh
 the field, hills, and horses stay clean. Plain HTML/CSS/JS — no framework — hosted on
 **Netlify**.
 
+## Local checks
+
+Run `npm install` once, then `npm run check:fast`. Installation enables the
+tracked pre-commit hook, which checks staged source with Prettier and runs ESLint
+across the browser modules and Node server. Python's compiler checks the asset
+helper for syntax errors.
+
 > **Status:** complete. A full-bleed, autoplaying hero video is pinned to the
 > viewport and a scroll-driven timeline engine (`src/timeline.js`) emits a smooth
 > `0..1` progress with named scene ranges. The baked sky mask and the WebGL
