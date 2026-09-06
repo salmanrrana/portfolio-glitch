@@ -4,13 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "check": "node --check scripts/serve-static.mjs && node --check src/main.js && node --check src/projects.js && node --check src/scenes.js && node --check src/timeline.js && node --check src/glitch.js && node --check src/scroll-cue.js",
+    "prepare": "node tools/install-hooks.mjs",
+    "check:staged": "node tools/check-staged.mjs",
+    "lint": "node tools/check-inline.mjs && eslint src scripts tools eslint.config.mjs && python3 -m py_compile assets-src/make-sky-mask.py",
+    "format:check": "prettier --check package.json eslint.config.mjs tools/*.mjs",
+    "check": "npm run check:fast",
+    "check:fast": "npm run lint && npm run format:check",
     "start": "node scripts/serve-static.mjs",
     "serve": "node scripts/serve-static.mjs",
-    "test": "npm run check"
+    "test": "npm run check:fast"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.2"
+  }
 }
